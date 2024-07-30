@@ -1,0 +1,2588 @@
+diff U0x009+arena3/common.pas Test86_guild/common.pas
+274c274
+<         Relation        :integer;
+---
+> 				Relation        :integer;
+624a625,628
+> {ギルド機能追加}
+> 	GuildInv      :cardinal; //ギルド勧誘対象キャラ
+> 	GuildPos      :byte; //ギルド職位インデックス
+> {ギルド機能追加ココまで}
+892a897,946
+> {ギルド機能追加}
+> // ギルドデータ
+> type TGuild = class
+> 	ID           :Cardinal;//ID
+> 	Name         :string;//名前
+> 	LV           :word;//レベル
+> 	EXP          :Cardinal;//経験値
+> 	NextEXP      :Cardinal;//レベルアップ経験値
+> 	MasterName   :string;//ギルドマスターの名前
+> 	RegUsers     :word;//登録者数
+> 	MaxUsers     :word;//定員
+> 	SLV          :word;//メンバーのレベルの合計
+> 	MemberID     :array[0..36] of cardinal;//メンバーID
+> 	Member       :array[0..36] of TChara;//メンバー
+> 	MemberPos    :array[0..36] of Byte;//メンバー職位
+> 	MemberEXP    :array[0..36] of cardinal;//上納経験値
+> 	PosName      :array[0..20] of string;//職位名
+> 	PosInvite    :array[0..20] of boolean;//加入権限
+> 	PosPunish    :array[0..20] of boolean;//処罰権限
+> 	PosEXP       :array[0..20] of byte;//EXP上納%
+> 	Notice       :array[0..2] of string;//告知
+> 	Agit         :string;//管理領地
+> 	Emblem       :Cardinal;//エンブレム
+> 	GSkill       :array[10000..10005] of TSkill;
+> 	GSkillPoint  :word;//スキルポイント
+> 	Present      :Cardinal;//上納ポイント
+> 	DisposFV     :integer;//性向F-V
+> 	DisposRW     :integer;//性向R-W
+> 	GuildBanList :TStringList;//追放者リスト
+> 	RelAlliance  :TStringList;//同盟ギルドリスト
+> 	RelHostility :TStringList;//敵対ギルドリスト
+> 
+> 	constructor Create;
+> 	destructor  Destroy; override;
+> end;
+> //------------------------------------------------------------------------------
+> type TGBan = class
+> // ギルド追放者データ
+> 	Name    :string;//キャラ名
+> 	AccName :string;//アカウント名
+> 	Reason  :string;//追放事由
+> end;
+> //------------------------------------------------------------------------------
+> type TGRel = class
+> // 同盟・敵対ギルドデータ
+> 	ID        :Cardinal;//ギルドID
+> 	GuildName :string;//同盟・敵対ギルド名
+> end;
+> {ギルド機能追加ココまで}
+> //------------------------------------------------------------------------------
+932c986
+< 		0,  0, -1,  0,  0,  0,  0,  0,   0,  0,  0,  0,  0,  0,  0,  0, // 0x01b0
+---
+> 		0,  0, -1,  0,  0,  0,114,  0,   0,  0,  0,  0,  0,  0,  0,  0, // 0x01b0
+1002a1057,1062
+> {ギルド機能追加}
+> 	GuildList     :TIntList32;
+> 	NowGuildID    :cardinal;
+> 	GSkillDB      :TIntList32;
+> 	GExpTable     :array[0..50] of cardinal;
+> {ギルド機能追加ココまで}
+1161a1222,1233
+> //------------------------------------------------------------------------------
+> {ギルド機能追加}
+> 		procedure SendGuildInfo(tc:TChara; Tab:Byte; GuildM:boolean = false; AvoidSelf:boolean = false);
+> 		procedure SendGuildMCmd(tc:TChara; PacketLen:word; AvoidSelf:boolean = false);
+> 		procedure CalcGuildLvUP(tg:TGuild; tc:TChara; GEXP:cardinal);
+> 		procedure SendGLoginInfo(tg:TGuild; tc:TChara);
+> 		function  GetGuildConUsers(tg:TGuild) : word;
+> 		function  GetGuildRelation(tg:TGuild; tc:TChara) : integer;
+> 		procedure KillGuildRelation(tg:TGuild; tg1:TGuild; tc:TChara; tc1:TChara; RelType:byte);
+> 		function  LoadEmblem(tg:TGuild) : word;
+> 		procedure SaveEmblem(tg:TGuild; size:cardinal);
+> {ギルド機能追加ココまで}
+1696,1698c1768,1770
+<                 if (((Option and $0008) <> 0) or ((Option and $0080) <> 0)
+<  		or ((Option and $0100) <> 0) or ((Option and $0200) <> 0)
+<  		or ((Option and $0400) <> 0) )and((JID = 10)or(JID = 3)) then begin //カート
+---
+> 								if (((Option and $0008) <> 0) or ((Option and $0080) <> 0)
+> 		or ((Option and $0100) <> 0) or ((Option and $0200) <> 0)
+> 		or ((Option and $0400) <> 0) )and((JID = 10)or(JID = 5)) then begin //カート
+1928a2001,2006
+> {ギルド機能追加}
+> var
+> 	j   :integer;
+> 	w   :word;
+> 	tg  :TGuild;
+> {ギルド機能追加ココまで}
+1953,1955c2031,2044
+< 	WFIFOW(34, tc.GuildID);
+< 	WFIFOW(40, tc.Manner);
+< 	WFIFOW(42, tc.Karma);
+---
+> {ギルド機能追加}
+> 	WFIFOL(34, tc.GuildID); //GuildID.L
+> 	w := 0;
+> 	if (tc.GuildID <> 0) then begin
+> 		j := GuildList.IndexOf(tc.GuildID);
+> 		if (j <> -1) then begin
+> 			tg := GuildList.Objects[j] as TGuild;
+> 			w := tg.Emblem;
+> 		end;
+> 	end;
+> 	WFIFOL(38, w); //EmblemID.L
+> 	WFIFOW(42, tc.Manner); //.W?
+> 	WFIFOB(44, tc.Karma); //.B?
+> {ギルド機能追加ココまで}
+1961a2051,2053
+> {追加}
+> 		WFIFOB(51, tc.BaseLV);
+> {追加ココまで}
+1967a2060,2062
+> {追加}
+> 		WFIFOB(52, tc.BaseLV);
+> {追加ココまで}
+1993a2089,2094
+> {ギルド機能追加}
+> var
+> 	j   :integer;
+> 	w   :word;
+> 	tg  :TGuild;
+> {ギルド機能追加ココまで}
+2016,2018c2117,2130
+< 	WFIFOW(38, tc.GuildID);
+< 	WFIFOW(44, tc.Manner);
+< 	WFIFOW(46, tc.Karma);
+---
+> {ギルド機能追加}
+> 	WFIFOL(38, tc.GuildID); //GuildID.L
+> 	w := 0;
+> 	if (tc.GuildID <> 0) then begin
+> 		j := GuildList.IndexOf(tc.GuildID);
+> 		if (j <> -1) then begin
+> 			tg := GuildList.Objects[j] as TGuild;
+> 			w := tg.Emblem;
+> 		end;
+> 	end;
+> 	WFIFOL(42, w); //EmblemID.L
+> 	WFIFOW(46, tc.Manner); //.W?
+> 	WFIFOB(48, tc.Karma); //.B?
+> {ギルド機能追加ココまで}
+2022a2135,2137
+> {追加}
+> 	WFIFOB(59, tc.BaseLV);
+> {追加ココまで}
+2107a2223,2230
+> {ギルド機能追加}
+> 		//メンバーに通知
+> 		WFIFOW( 0, $016d);
+> 		WFIFOL( 2, tc.ID);
+> 		WFIFOL( 6, tc.CID);
+> 		WFIFOL(10, 0);
+> 		SendGuildMCmd(tc, 14, true);
+> {ギルド機能追加ココまで}
+2801c2924
+< 	        WFIFOW( 0, $007b);
+---
+> 					WFIFOW( 0, $007b);
+3285a3409,3435
+> procedure SendPCmd(tc:TChara; PacketLen:word; InMap:boolean = false; AvoidSelf:boolean = false);
+> //パーティーメンバーに同一パケットを送りつける
+> //InMapはtrue時マップ内のメンバーのみにパケット送信(位置表示やHPバーなど)
+> //AvoidSelfはtrue時自分自身を除くメンバーにパケット送信
+> var
+> 	i	:integer;
+> 	tc1	:TChara;
+> 	tpa	:Tparty;
+> begin
+> 	i := PartyNameList.IndexOf(tc.PartyName);
+> 	if (i <> -1) then begin
+> 		tpa := PartyNameList.Objects[i] as TParty;
+> 		for i := 0 to 11 do begin
+> 			if tpa.MemberID[i] = 0 then break;
+> 			if Chara.IndexOf(tpa.MemberID[i]) = -1 then Continue;
+> 			tc1 := tpa.Member[i];
+> 			if tc1.Login <> 2 then Continue;
+> 			if (tc.Map = tc1.Map) or (InMap = false) then begin
+> 				if (tc.ID = tc1.ID) and (AvoidSelf = true) then continue;
+> 				tc1.Socket.SendBuf(buf, PacketLen);
+> 				//DebugOut.Lines.Add(Format('Send to ID %d : Length %d ', [tc1.ID, PacketLen]));
+> 			end;
+> 		end;
+> 	end;
+> end;
+> {パーティー機能追加ココまで}
+> //==============================================================================
+3629c3779,3933
+< 
+---
+> {ギルド機能追加}
+> procedure SendGuildInfo(tc:TChara; Tab:Byte; GuildM:boolean = false; AvoidSelf:boolean = false);
+> //ギルド情報を送信する
+> //GuildM=true時はギルドメンバー全員に送信する
+> var
+> 	i   :integer;
+> 	j   :integer;
+> 	k   :integer;
+> 	w   :word;
+> 	tc1 :TChara;
+> 	tg  :TGuild;
+> 	tgb :TGBan;
+> begin
+> 	if (Tab > 5) then exit;
+> 	j := GuildList.IndexOf(tc.GuildID);
+> 	if (j = -1) then exit;
+> 	tg := GuildList.Objects[j] as TGuild;
+> 	with tg do begin
+> 		case Tab of
+> 		0: //ギルド基本情報
+> 			begin
+> 				WFIFOW( 0, $01b6);
+> 				WFIFOL( 2, ID);
+> 				WFIFOL( 6, LV);
+> 				WFIFOL(10, GetGuildConUsers(tg));
+> 				WFIFOL(14, MaxUsers);
+> 				WFIFOL(18, SLV div RegUsers);
+> 				WFIFOL(22, EXP);
+> 				WFIFOL(26, NextEXP);
+> 				WFIFOL(30, Present);
+> 				Move(DisposFV, buf[34], 4);
+> 				Move(DisposRW, buf[38], 4);
+> 				WFIFOL(42, 2);//members?
+> 				WFIFOS(46, Name, 24);
+> 				WFIFOS(70, MasterName, 24);
+> 				WFIFOS(94, Agit, 20);
+> 				if (GuildM = false) then tc.Socket.SendBuf(buf, 114)
+> 				else SendGuildMCmd(tc, 114, AvoidSelf);
+> 				//同盟・敵対情報
+> 				i :=GetGuildRelation(tg, tc);
+> 				if (i <> -1) then begin
+> 					if (GuildM = false) then tc.Socket.SendBuf(buf, i)
+> 					else SendGuildMCmd(tc, i, AvoidSelf);
+> 				end;
+> 			end;
+> 		1: //ギルド員情報
+> 			begin
+> 				//職位情報
+> 				w := 28 * 20 + 4;
+> 				WFIFOW( 0, $0166);
+> 				WFIFOW( 2, w);
+> 				for i := 0 to 19 do begin
+> 					WFIFOL(i * 28 + 4, i);
+> 					WFIFOS(i * 28 + 8, PosName[i], 24);
+> 				end;
+> 				if (GuildM = false) then tc.Socket.SendBuf(buf, w)
+> 				else SendGuildMCmd(tc, w, AvoidSelf);
+> 				//メンバー情報
+> 				w := 4;
+> 				WFIFOW( 0, $0154);
+> 				for i := 0 to 35 do begin
+> 					tc1 := Member[i];
+> 					if (tc1 <> nil) then begin
+> 						WFIFOL(w      , tc1.ID);
+> 						WFIFOL(w +   4, tc1.CID);
+> 						WFIFOW(w +   8, tc1.Hair);
+> 						WFIFOW(w +  10, tc1.HairColor);
+> 						WFIFOW(w +  12, tc1.Gender);
+> 						WFIFOW(w +  14, tc1.JID);
+> 						WFIFOW(w +  16, tc1.BaseLV);
+> 						WFIFOL(w +  18, MemberEXP[i]);
+> 						if (tc1.Login = 2) then k := 1 else k := 0;
+> 						WFIFOL(w +  22, k);
+> 						WFIFOL(w +  26, MemberPos[i]);
+> 						WFIFOS(w +  30, '', 50);//?
+> 						WFIFOS(w +  80, tc1.Name, 24);
+> 						w := w + 104;
+> 					end;
+> 				end;
+> 				WFIFOW( 2, w);
+> 				if (GuildM = false) then tc.Socket.SendBuf(buf, w)
+> 				else SendGuildMCmd(tc, w, AvoidSelf);
+> 			end;
+> 		2: //職位設定
+> 			begin
+> 				//職位情報
+> 				w := 28 * 20 + 4;
+> 				WFIFOW( 0, $0166);
+> 				WFIFOW( 2, w);
+> 				for i := 0 to 19 do begin
+> 					WFIFOL( 4 + i * 28, i);
+> 					WFIFOS( 8 + i * 28, PosName[i], 24);
+> 				end;
+> 				if (GuildM = false) then tc.Socket.SendBuf(buf, w)
+> 				else SendGuildMCmd(tc, w, AvoidSelf);
+> 				//権限＆上納
+> 				w := 16 * 20 + 4;
+> 				WFIFOW( 0, $0160);
+> 				WFIFOW( 2, w);
+> 				for i := 0 to 19 do begin
+> 					WFIFOL( 4 + i * 16, i);
+> 					if (PosInvite[i] = true) then j := 16 else j := 0;
+> 					if (PosPunish[i] = true) then j := j + 1;
+> 					WFIFOL( 8 + i * 16, j);
+> 					WFIFOL(12 + i * 16, i);
+> 					WFIFOL(16 + i * 16, PosEXP[i]);
+> 				end;
+> 				if (GuildM = false) then tc.Socket.SendBuf(buf, w)
+> 				else SendGuildMCmd(tc, w, AvoidSelf);
+> 			end;
+> 		3: //ギルドスキル
+> 			begin
+> 				w := 37 * 5 + 6;
+> 				j := 0;
+> 				WFIFOW( 0, $0162);
+> 				WFIFOW( 2, w);
+> 				WFIFOW( 4, GSkillPoint);
+> 				for i := 10000 to 10004 do begin
+> 					WFIFOW( 6 + 37 * j, i);
+> 					WFIFOW( 8 + 37 * j, 0);
+> 					WFIFOW(10 + 37 * j, 0);
+> 					WFIFOW(12 + 37 * j, GSkill[i].Lv);
+> 					WFIFOW(14 + 37 * j, 0);
+> 					WFIFOW(16 + 37 * j, 0);
+> 					WFIFOS(18 + 37 * j, GSkill[i].Data.IDC, 24);
+> 					if (GSkill[i].Lv < GSkill[i].Data.MasterLV) and (GSkillPoint > 0) then k := 1 else k := 0;
+> 					WFIFOB(42 + 37 * j, k);
+> 					Inc(j);
+> 				end;
+> 				if (GuildM = false) then tc.Socket.SendBuf(buf, w)
+> 				else SendGuildMCmd(tc, w, AvoidSelf);
+> 			end;
+> 		4: //追放者リスト
+> 			begin
+> 				if (GuildBanList.Count > 0) then begin
+> 					w := 4;
+> 					WFIFOW( 0, $0163);
+> 					for i := 0 to GuildBanList.Count - 1 do begin
+> 						tgb := GuildBanList.Objects[i] as TGBan;
+> 						WFIFOS(w     , tgb.Name, 24);
+> 						WFIFOS(w + 24, tgb.AccName, 24);
+> 						WFIFOS(w + 48, tgb.Reason, 40);
+> 						Inc(w, 88);
+> 					end;
+> 					WFIFOW( 2, w);
+> 					SendGuildMCmd(tc, w);
+> 				end;
+> 			end;
+> 		5: //告知事項
+> 			begin
+> 				//不要
+> 			end;
+> 		end;
+> 	end;
+> end;
+3631,3633c3935,3936
+< procedure SendPCmd(tc:TChara; PacketLen:word; InMap:boolean = false; AvoidSelf:boolean = false);
+< //パーティーメンバーに同一パケットを送りつける
+< //InMapはtrue時マップ内のメンバーのみにパケット送信(位置表示やHPバーなど)
+---
+> procedure SendGuildMCmd(tc:TChara; PacketLen:word; AvoidSelf:boolean = false);
+> //ギルドメンバーに同一パケットを送りつける
+3636,3638c3939,3942
+< 	i	:integer;
+< 	tc1	:TChara;
+< 	tpa	:Tparty;
+---
+> 	i   :integer;
+> 	j   :integer;
+> 	tc1 :TChara;
+> 	tg  :TGuild;
+3640,3651c3944,3970
+< 	i := PartyNameList.IndexOf(tc.PartyName);
+< 	if (i <> -1) then begin
+< 		tpa := PartyNameList.Objects[i] as TParty;
+< 		for i := 0 to 11 do begin
+< 			if tpa.MemberID[i] = 0 then break;
+< 		 	if Chara.IndexOf(tpa.MemberID[i]) = -1 then Continue;
+< 			tc1 := tpa.Member[i];
+< 			if tc1.Login <> 2 then Continue;
+< 			if (tc.Map = tc1.Map) or (InMap = false) then begin
+< 				if (tc.ID = tc1.ID) and (AvoidSelf = true) then continue;
+< 				tc1.Socket.SendBuf(buf, PacketLen);
+< 				//DebugOut.Lines.Add(Format('Send to ID %d : Length %d ', [tc1.ID, PacketLen]));
+---
+> 	j := GuildList.IndexOf(tc.GuildID);
+> 	if (j = -1) then exit;
+> 	tg := GuildList.Objects[j] as TGuild;
+> 	for i := 0 to tg.RegUsers - 1 do begin
+> 		if tg.MemberID[i] = 0 then break;
+> 		if Chara.IndexOf(tg.MemberID[i]) = -1 then break;
+> 		tc1 := tg.Member[i];
+> 		if tc1.Login <> 2 then continue;
+> 		if (tc.ID = tc1.ID) and (AvoidSelf = true) then continue;
+> 		tc1.Socket.SendBuf(buf, PacketLen);
+> 	end;
+> end;
+> //------------------------------------------------------------------------------
+> procedure CalcGuildLvUP(tg:TGuild; tc:TChara; GEXP:cardinal);
+> //ギルドのレベルアップ用
+> begin
+> 	//経験値加算
+> 	tg.EXP := tg.EXP + GEXP;
+> 	tg.MemberEXP[tc.GuildPos] := tg.MemberEXP[tc.GuildPos] + GEXP;
+> 
+> 	if (tg.EXP >= tg.NextEXP) then begin
+> 		//レベルアップ
+> 		while (tg.EXP >= tg.NextEXP) do begin
+> 			tg.EXP := tg.EXP - GExpTable[tg.LV];
+> 			if (tg.LV < 50) then begin
+> 				tg.LV := tg.LV + 1;
+> 				tg.GSkillPoint := tg.GSkillPoint + 1;
+3652a3972
+> 			tg.NextEXP := GExpTable[tg.LV];
+3653a3974
+> 		SendGuildInfo(tc, 3, true);
+3654a3976,3977
+> 	SendGuildInfo(tc, 0, true);
+> 	SendGuildInfo(tc, 1, true);
+3656c3979,4149
+< {パーティー機能追加ココまで}
+---
+> //------------------------------------------------------------------------------
+> procedure SendGLoginInfo(tg:TGuild; tc:TChara);
+> //ログイン時のギルド情報を送信する
+> var
+> 	l :word;
+> begin
+> 	WFIFOW( 0, $016c);
+> 	WFIFOL( 2, tg.ID);
+> 	WFIFOL( 6, tg.Emblem);
+> 	if (tg.PosInvite[tc.GuildPos] = true) then l := 16 else l := 0;
+> 	if (tg.PosPunish[tc.GuildPos] = true) then l := l + 1;
+> 	WFIFOL(10, l);
+> 	if (tc.Name = tg.MasterName) then WFIFOB(14, 1) else WFIFOB(14, 0);
+> 	WFIFOL(15, 1);//?
+> 	WFIFOS(19, tg.Name, 24);
+> 	tc.Socket.SendBuf(buf, 43);
+> end;
+> //------------------------------------------------------------------------------
+> function GetGuildConUsers(tg:TGuild) : word;
+> //ログイン中のギルドメンバー数を取得する
+> var
+> 	i  :integer;
+> 	w  :word;
+> begin
+> 	w := 0;
+> 	for i := 0 to 35 do begin
+> 		if (tg.Member[i] <> nil) then begin
+> 			if (tg.Member[i].Login = 2) then Inc(w);
+> 		end;
+> 	end;
+> 	Result := w;
+> end;
+> //------------------------------------------------------------------------------
+> function GetGuildRelation(tg:TGuild; tc:TChara) : integer;
+> //同盟・敵対ギルド情報を送信する
+> var
+> 	i   :integer;
+> 	w   :word;
+> 	tgl :TGRel;
+> begin
+> 	if (tg.RelAlliance.Count = 0) and (tg.RelHostility.Count = 0) then begin
+> 		Result := -1;
+> 		exit;
+> 	end;
+> 	w := 4;
+> 	WFIFOW( 0, $014c);
+> 	for i := 0 to tg.RelAlliance.Count - 1 do begin
+> 		tgl := tg.RelAlliance.Objects[i] as TGRel;
+> 		WFIFOL(w, 0);
+> 		WFIFOL(w + 4, tgl.ID);
+> 		WFIFOS(w + 8, tgl.GuildName, 24);
+> 		Inc(w, 32);
+> 	end;
+> 	for i := 0 to tg.RelHostility.Count - 1 do begin
+> 		tgl := tg.RelHostility.Objects[i] as TGRel;
+> 		WFIFOL(w, 1);
+> 		WFIFOL(w + 4, tgl.ID);
+> 		WFIFOS(w + 8, tgl.GuildName, 24);
+> 		Inc(w, 32);
+> 	end;
+> 	WFIFOW( 2, w);
+> 	Result := w;
+> end;
+> //------------------------------------------------------------------------------
+> procedure KillGuildRelation(tg:TGuild; tg1:TGuild; tc:TChara; tc1:TChara; RelType:byte);
+> //同盟・敵対関係を解消する
+> var
+> 	j   :integer;
+> 	w   :word;
+> 	tgl :TGRel;
+> begin
+> 	//解消通知
+> 	if (RelType = 0) then begin
+> 		//同盟解消(自分ギルド)
+> 		j := tg.RelAlliance.IndexOf(tg1.Name);
+> 		if (j <> -1) then begin
+> 			tgl := tg.RelAlliance.Objects[j] as TGRel;
+> 			tg.RelAlliance.Delete(j);
+> 			WFIFOW( 0, $0184);
+> 			WFIFOL( 2, tg1.ID);
+> 			WFIFOL( 6, RelType);
+> 			SendGuildMCmd(tc, 10);
+> 		end;
+> 		//同盟解消(相手ギルド)
+> 		j := tg1.RelAlliance.IndexOf(tg.Name);
+> 		if (j <> -1) then begin
+> 			tgl := tg1.RelAlliance.Objects[j] as TGRel;
+> 			tg1.RelAlliance.Delete(j);
+> 			WFIFOW( 0, $0184);
+> 			WFIFOL( 2, tg.ID);
+> 			WFIFOL( 6, RelType);
+> 			SendGuildMCmd(tc1, 10);
+> 		end;
+> 	end else begin
+> 		//敵対解消(自分ギルドのみ)
+> 		j := tg.RelHostility.IndexOf(tg1.Name);
+> 		if (j <> -1) then begin
+> 			tgl := tg.RelHostility.Objects[j] as TGRel;
+> 			tg.RelHostility.Delete(j);
+> 			WFIFOW( 0, $0184);
+> 			WFIFOL( 2, tg1.ID);
+> 			WFIFOL( 6, RelType);
+> 			SendGuildMCmd(tc, 10);
+> 		end;
+> 	end;
+> end;
+> //------------------------------------------------------------------------------
+> function LoadEmblem(tg:TGuild) : word;
+> //ギルドエンブレムを読み込む
+> var
+> 	i     :integer;
+> 	l     :cardinal;
+> 	str   :string;
+> 	embfs :TFileStream;
+> 	embdt :PByte;
+> 	embpt :PByte;
+> begin
+> 	//ファイルチェック
+> 	str := AppPath + 'emblem\' + IntToStr(tg.ID) + '_' + IntToStr(tg.Emblem) + '.emb';
+> 	if not FileExists(str) then begin
+> 		Result := 0;
+> 		exit;
+> 	end;
+> 
+> 	//ファイル読み込み
+> 	embfs := TFileStream.Create(str, fmOpenRead);
+> 	l := embfs.Size;
+> 	if (l = 0) then begin
+> 		embfs.Free;
+> 		Result := 0;
+> 		exit;
+> 	end;
+> 	GetMem(embdt, l);
+> 	embfs.Read(embdt^, l);
+> 	embfs.Free;
+> 	embpt := embdt;
+> 	WFIFOW( 0, $0152);
+> 	WFIFOW( 2, l + 12);
+> 	WFIFOL( 4, tg.ID);
+> 	WFIFOL( 8, tg.Emblem);
+> 	for i := 0 to l - 1 do begin
+> 		WFIFOB(i + 12, embpt^);
+> 		Inc(embpt);
+> 	end;
+> 	FreeMem(embdt);
+> 	Result := l + 12;
+> end;
+> //------------------------------------------------------------------------------
+> procedure SaveEmblem(tg:TGuild; size:cardinal);
+> //ギルドエンブレムを書き込む
+> var
+> 	i     :integer;
+> 	str   :string;
+> 	embfs :TFileStream;
+> 	embdt :PByte;
+> 	embpt :PByte;
+> begin
+> 	//ファイル書き込み
+> 	str := AppPath + 'emblem\' + IntToStr(tg.ID) + '_' + IntToStr(tg.Emblem) + '.emb';
+> 	GetMem(embdt, size);
+> 	embpt := embdt;
+> 	for i := 0 to size - 1 do begin
+> 		RFIFOB(i + 4, embpt^);
+> 		Inc(embpt);
+> 	end;
+> 	embfs := TFileStream.Create(str, fmCreate or fmOpenWrite);
+> 	embfs.Write(embdt^, size);
+> 	embfs.Free;
+> 	FreeMem(embdt);
+> end;
+> {ギルド機能追加ココまで}
+3809a4303
+> 						tn.ScriptInitS := -1;
+3843a4338
+> 						tn.ScriptInitS := -1;
+4578d5072
+< 								if (tm.gat[StrToInt(sl1.Strings[1]), StrToInt(sl1.Strings[2])] and 1 = 0) then i := 1;
+4586,4589c5080,5089
+< 								SetLength(tn.Script[k].Data1, 7);
+< 								for i := 0 to 6 do begin
+< 									tn.Script[k].Data1[i] := LowerCase(sl1.Strings[i]);
+< 								end;
+---
+> 								SetLength(tn.Script[k].Data1, 2);
+> 								SetLength(tn.Script[k].Data2, 1);
+> 								SetLength(tn.Script[k].Data3, 4);
+> 								tn.Script[k].Data1[0] := LowerCase(sl1.Strings[0]);
+> 								tn.Script[k].Data3[0] := StrToInt(sl1.Strings[1]);
+> 								tn.Script[k].Data3[1] := StrToInt(sl1.Strings[2]);
+> 								tn.Script[k].Data1[1] := sl1.Strings[3];
+> 								tn.Script[k].Data3[2] := StrToInt(sl1.Strings[4]);
+> 								tn.Script[k].Data3[3] := StrToInt(sl1.Strings[5]);
+> 								tn.Script[k].Data2[0] := LowerCase(sl1.Strings[6]);
+4744,4746c5244
+< 								val(sl1.Strings[0], i, j);
+< 								if (j = 0) or ((Copy(sl1.Strings[0], 1, 1) <> '$')
+< 									and (Copy(sl1.Strings[0], 1, 2) <> '\$')) then begin
+---
+> 								if (Copy(sl1.Strings[0], 1, 1) <> '$') and (Copy(sl1.Strings[0], 1, 2) <> '\$') then begin
+5013c5511
+< 					if (tn.Script[i].ID = 33) and (tn.Script[i].Data1[6] <> '') then begin
+---
+> 					if (tn.Script[i].ID = 33) and (tn.Script[i].Data2[0] <> '') then begin
+5017,5018c5515,5516
+< 							if (tn1.Name = tn.Script[i].Data1[6]) and (tn1.JID = -1) then begin
+< 								tn.Script[i].Data1[6] := IntToStr(tn1.ID);
+---
+> 							if (tn1.Name = tn.Script[i].Data2[0]) and (tn1.JID = -1) then begin
+> 								tn.Script[i].Data2[0] := IntToStr(tn1.ID);
+5024,5025c5522,5523
+< 							DebugOut.Lines.Add(Format('%s: [callmob] event not found', [tn.Script[i].Data1[6]]));
+< 							tn.Script[i].Data1[6] := '';
+---
+> 							DebugOut.Lines.Add(Format('%s: [callmob] event not found', [tn.Script[i].Data2[0]]));
+> 							tn.Script[i].Data2[0] := '';
+5228c5726
+<         
+---
+> 
+5326a5825,5852
+> 
+> {ギルド機能追加ココまで}
+> constructor TGuild.Create;
+> var
+> 	i :integer;
+> begin
+> 	inherited;
+> 
+> 	for i := 10000 to 10004 do
+> 		GSkill[i] := TSkill.Create;
+> 	GuildBanList := TStringList.Create;
+> 	RelAlliance := TStringList.Create;
+> 	RelHostility := TStringList.Create;
+> end;
+> 
+> destructor TGuild.Destroy;
+> var
+> 	i :integer;
+> begin
+> 	for i := 10000 to 10004 do
+> 		GSkill[i].Free;
+> 	GuildBanList.Free;
+> 	RelAlliance.Free;
+> 	RelHostility.Free;
+> 
+> 	inherited;
+> end;
+> {ギルド機能追加ココまで}
+diff U0x009+arena3/database.pas Test86_guild/database.pas
+79a80,83
+> {ギルド機能追加}
+> 					FileExists(AppPath + 'database\skill_guild_db.txt') and
+> 					FileExists(AppPath + 'database\exp_guild_db.txt') and
+> {ギルド機能追加ココまで}
+657a662,744
+> {ギルド機能追加}
+> 	//ギルドスキルデータベース読み込み
+> 	DebugOut.Lines.Add('Guild Skill database loading...');
+> 	Application.ProcessMessages;
+> 	AssignFile(txt, AppPath + 'database\skill_guild_db.txt');
+> 	Reset(txt);
+> 	Readln(txt, str);
+> 	while not eof(txt) do begin
+> 		sl.Clear;
+> 		Readln(txt, str);
+> 		sl.DelimitedText := str;
+> 		for i := sl.Count to 64 do
+> 			sl.Add('0');
+> 		for i := 0 to 64 do
+> 			if (i <> 1) and (i <> 2) and (sl.Strings[i] = '') then sl.Strings[i] := '0';
+> 		tl := TSkillDB.Create;
+> 		with tl do begin
+> 			ID := StrToInt(sl.Strings[0]);
+> 			IDC := sl.Strings[1];
+> 			Name := sl.Strings[2];
+> 			SType := StrToInt(sl.Strings[3]);
+> 			MasterLV := StrToInt(sl.Strings[4]);
+> 			for i := 0 to 9 do
+> 				SP[i+1] := StrToInt(sl.Strings[5+i]);
+> 			HP := StrToInt(sl.Strings[15]);
+> 			UseItem := StrToInt(sl.Strings[16]);
+> 			CastTime1 := StrToInt(sl.Strings[17]);
+> 			CastTime2 := StrToInt(sl.Strings[18]);
+> 			CastTime3 := StrToInt(sl.Strings[19]);
+> 			Range := StrToInt(sl.Strings[20]);
+> 			Element := StrToInt(sl.Strings[21]);
+> 			for i := 0 to 9 do
+> 				Data1[i+1] := StrToInt(sl.Strings[22+i]);
+> 			for i := 0 to 9 do
+> 				Data2[i+1] := StrToInt(sl.Strings[32+i]);
+> 			Range2 := StrToInt(sl.Strings[42]);
+> 			Icon := StrToInt(sl.Strings[43]);
+> 			wj := StrToInt64(sl.Strings[44]);
+> 			for i := 0 to 20 do begin
+> 				Job[i] := boolean((wj and (1 shl i)) <> 0);
+> 			end;
+> 			for i := 0 to 9 do begin
+> 				ReqSkill[i] := StrToInt(sl.Strings[45+i*2]);
+> 				ReqLV[i] := StrToInt(sl.Strings[46+i*2]);
+> 			end;
+> 		end;
+> 		GSkillDB.AddObject(tl.ID, tl);
+> 	end;
+> 	CloseFile(txt);
+> 	DebugOut.Lines.Add(Format('-> Total %d guild skill(s) database loaded.', [GSkillDB.Count]));
+> 	Application.ProcessMessages;
+> 
+> 	//ギルド経験値テーブル読み込み
+> 	DebugOut.Lines.Add('Guild EXP database loading...');
+> 	Application.ProcessMessages;
+> 	for i := 1 to 50 do GExpTable[i] := 1999999999;
+> 	AssignFile(txt, AppPath + 'database\exp_guild_db.txt');
+> 	Reset(txt);
+> 	i := 1;
+> 	while not eof(txt) do begin
+> 		sl.Clear;
+> 		Readln(txt, str);
+> 		sl.DelimitedText := str;
+> 		if sl.Count = 1 then begin
+> 			GExpTable[i] := StrToInt(sl.Strings[0]);
+> 			Inc(i);
+> 			if i > 49 then break;
+> 		end;
+> 	end;
+> 	CloseFile(txt);
+> 	DebugOut.Lines.Add('-> Guild EXP database loaded.');
+> 	Application.ProcessMessages;
+> 
+> 	//エンブレム格納ディレクトリ
+> 	if not DirectoryExists(AppPath + 'emblem') then begin
+> 		if not CreateDir(AppPath + 'emblem') then begin
+> 			MessageBox(Handle, 'エンブレム格納ディレクトリが作成できません。', 'Weiss', MB_OK or MB_ICONSTOP);
+> 			Application.Terminate;
+> 			exit;
+> 		end;
+> 	end;
+> {ギルド機能追加ココまで}
+> 
+844,846c931,933
+<         tpe     :TPet;
+<         tpd     :TPetDB;
+<         tmd     :TMobDB;
+---
+> 				tpe     :TPet;
+> 				tpd     :TPetDB;
+> 				tmd     :TMobDB;
+847a935,939
+> {ギルド機能追加}
+> 	tg  :TGuild;
+> 	tgb :TGBan;
+> 	tgl :TGRel;
+> {ギルド機能追加ココまで}
+910a1003,1010
+> {ギルド機能追加}
+> 	if not FileExists(AppPath + 'guild.txt') then begin
+> 		AssignFile(txt, AppPath + 'guild.txt');
+> 		Rewrite(txt);
+> 		Writeln(txt, '##Weiss.GuildData.0x0002');
+> 		CloseFile(txt);
+> 	end;
+> {ギルド機能追加ココまで}
+1294a1395,1543
+> 
+> {ギルド機能追加}
+> 	//ギルド情報ロード
+> 	DebugOut.Lines.Add('Guild data loading...');
+> 	Application.ProcessMessages;
+> 	AssignFile(txt, AppPath + 'guild.txt');
+> 	Reset(txt);
+> 	Readln(txt, str);
+> 
+> 	if str = '##Weiss.GuildData.0x0002' then begin
+> //		ver := 2;
+> 	end else begin
+> 		Reset(txt);
+> 	end;
+> 
+> 	while not eof(txt) do begin
+> 		tg := TGuild.Create;
+> 		with tg do begin
+> 			//基本情報
+> 			sl.Clear;
+> 			Readln(txt, str);
+> 			sl.DelimitedText := str;
+> 			if sl.Count <> 12 then continue;
+> 			ID := StrToInt(sl.Strings[0]);
+> 			if (ID > NowGuildID) then NowGuildID := ID;
+> 			Name := sl.Strings[1];
+> 			LV := StrToInt(sl.Strings[2]);
+> 			EXP := StrToInt(sl.Strings[3]);
+> 			GSkillPoint := StrToInt(sl.Strings[4]);
+> 			Notice[0] := sl.Strings[5];
+> 			Notice[1] := sl.Strings[6];
+> 			Agit := sl.Strings[7];
+> 			Emblem := StrToInt(sl.Strings[8]);
+> 			Present := StrToInt(sl.Strings[9]);
+> 			DisposFV := StrToInt(sl.Strings[10]);
+> 			DisposRW := StrToInt(sl.Strings[11]);
+> 			//メンバー情報
+> 			sl.Clear;
+> 			Readln(txt, str);
+> 			sl.DelimitedText := str;
+> 			if sl.Count <> 108 then continue;
+> 			for i := 0 to 35 do begin
+> 				MemberID[i] := StrToInt(sl.Strings[i * 3]);
+> 				MemberPos[i] := StrToInt(sl.Strings[i * 3 + 1]);
+> 				MemberEXP[i] := StrToInt(sl.Strings[i * 3 + 2]);
+> 				if (MemberID[i] <> 0) then Inc(RegUsers, 1);
+> 			end;
+> 			//職位情報
+> 			sl.Clear;
+> 			Readln(txt, str);
+> 			sl.DelimitedText := str;
+> 			if sl.Count <> 80 then continue;
+> 			for i := 0 to 19 do begin
+> 				PosName[i] := sl.Strings[i * 4];
+> 				PosInvite[i] := (StrToInt(sl.Strings[i * 4 + 1]) = 1);
+> 				PosPunish[i] := (StrToInt(sl.Strings[i * 4 + 2]) = 1);
+> 				PosEXP[i] := StrToInt(sl.Strings[i * 4 + 3]);
+> 			end;
+> 			//スキル情報
+> 			for i := 10000 to 10004 do begin
+> 				if GSkillDB.IndexOf(i) <> -1 then begin
+> 					GSkill[i].Data := GSkillDB.IndexOfObject(i) as TSkillDB;
+> 				end;
+> 			end;
+> 			sl.Clear;
+> 			Readln(txt, str);
+> 			sl.DelimitedText := str;
+> 			j := StrToInt(sl.Strings[0]);
+> 			for i := 1 to j do begin
+> 				if GSkillDB.IndexOf(StrToInt(sl.Strings[(i-1)*2+1])) <> -1 then begin
+> 					k := StrToInt(sl.Strings[(i-1)*2+1]);
+> 					GSkill[k].Lv := StrToInt(sl.Strings[(i-1)*2+2]);
+> 					GSkill[k].Card := false;
+> 				end;
+> 			end;
+> 			//追放者リスト、同盟・敵対リスト
+> 			sl.Clear;
+> 			Readln(txt, str);
+> 			sl.DelimitedText := str;
+> 			if sl.Count < 3 then continue;
+> 			k := 3;
+> 			//追放者
+> 			j := StrToInt(sl.Strings[0]);
+> 			for i := 1 to j do begin
+> 				tgb := TGBan.Create;
+> 				tgb.Name := sl.Strings[k];
+> 				Inc(k);
+> 				tgb.AccName := sl.Strings[k];
+> 				Inc(k);
+> 				tgb.Reason := sl.Strings[k];
+> 				Inc(k);
+> 				GuildBanList.AddObject(tgb.Name, tgb);
+> 			end;
+> 			//同盟
+> 			j := StrToInt(sl.Strings[1]);
+> 			for i := 1 to j do begin
+> 				tgl := TGRel.Create;
+> 				tgl.ID := StrToInt(sl.Strings[k]);
+> 				Inc(k);
+> 				tgl.GuildName := sl.Strings[k];
+> 				Inc(k);
+> 				RelAlliance.AddObject(tgl.GuildName, tgl);
+> 			end;
+> 			//敵対
+> 			j := StrToInt(sl.Strings[2]);
+> 			for i := 1 to j do begin
+> 				tgl := TGRel.Create;
+> 				tgl.ID := StrToInt(sl.Strings[k]);
+> 				Inc(k);
+> 				tgl.GuildName := sl.Strings[k];
+> 				Inc(k);
+> 				RelHostility.AddObject(tgl.GuildName, tgl);
+> 			end;
+> 			//補足情報設定
+> 			MaxUsers := 16;
+> 			if (GSkill[10004].Lv > 0) then begin
+> 				MaxUsers := MaxUsers + GSkill[10004].Data.Data1[GSkill[10004].Lv];
+> 			end;
+> 			NextEXP := GExpTable[LV];
+> 		end;
+> 		GuildList.AddObject(tg.ID, tg);
+> 	end;
+> 	CloseFile(txt);
+> 	DebugOut.Lines.Add(Format('*** Total %d Guild(s) data loaded.', [GuildList.Count]));
+> 	Application.ProcessMessages;
+> 
+> 	//IDとプレイヤー情報のリンク
+> 	for i := 0 to GuildList.Count - 1 do begin
+> 		tg := GuildList.Objects[i] as TGuild;
+> 		with tg do begin
+> 			for j := 0 to 35 do begin
+> 				if MemberID[j] <> 0 then begin
+> 					k := Chara.IndexOf(MemberID[j]);
+> 					if k <> -1 then begin
+> 						tc := Chara.Objects[k] as TChara;
+> 						tc.GuildName := Name;
+> 						tc.GuildID := ID;
+> 						tc.ClassName := PosName[MemberPos[j]];
+> 						tc.GuildPos := j;
+> 						Member[j] := tc;
+> 						if (j = 0) then MasterName := tc.Name;
+> 						SLV := SLV + tc.BaseLV;
+> 					end;
+> 				end;
+> 			end;
+> 		end;
+> 	end;
+> {ギルド機能追加ココまで}
+> 
+1304c1553
+<         if str = '##Weiss.PetData.0x0001' then begin
+---
+> 				if str = '##Weiss.PetData.0x0001' then begin
+1332c1581
+<                                         Relation    := StrToInt( sl.Strings[ 8] );
+---
+> 																				Relation    := StrToInt( sl.Strings[ 8] );
+1354c1603
+<                                                 Relation    := StrToInt( sl.Strings[10] );
+---
+> 																								Relation    := StrToInt( sl.Strings[10] );
+1474a1724,1728
+> {ギルド機能追加}
+> 	tg  :TGuild;
+> 	tgb :TGBan;
+> 	tgl :TGRel;
+> {ギルド機能追加ココまで}
+1701a1956,2034
+> 
+> {ギルド機能追加}
+> 	AssignFile(txt, AppPath + 'guild.txt');
+> 	Rewrite(txt);
+> 	Writeln(txt, '##Weiss.GuildData.0x0002');
+> 	for i := 0 to GuildList.Count - 1 do begin
+> 		tg := GuildList.Objects[i] as TGuild;
+> 		with tg do begin
+> 			//基本情報
+> 			sl.Clear;
+> 			sl.Add(IntToStr(ID));
+> 			sl.Add(Name);
+> 			sl.Add(IntToStr(LV));
+> 			sl.Add(IntToStr(EXP));
+> 			sl.Add(IntToStr(GSkillPoint));
+> 			sl.Add(Notice[0]);
+> 			sl.Add(Notice[1]);
+> 			sl.Add(Agit);
+> 			sl.Add(IntToStr(Emblem));
+> 			sl.Add(IntToStr(Present));
+> 			sl.Add(IntToStr(DisposFV));
+> 			sl.Add(IntToStr(DisposRW));
+> 			writeln(txt, sl.DelimitedText);
+> 			//メンバー情報
+> 			sl.Clear;
+> 			for j := 0 to 35 do begin
+> 				sl.Add(IntToStr(MemberID[j]));
+> 				sl.Add(IntToStr(MemberPos[j]));
+> 				sl.Add(IntToStr(MemberEXP[j]));
+> 			end;
+> 			writeln(txt, sl.DelimitedText);
+> 			//職位情報
+> 			sl.Clear;
+> 			for j := 0 to 19 do begin
+> 				sl.Add(PosName[j]);
+> 				if (PosInvite[j] = true) then sl.Add('1') else sl.Add('0');
+> 				if (PosPunish[j] = true) then sl.Add('1') else sl.Add('0');
+> 				sl.Add(IntToStr(PosEXP[j]));
+> 			end;
+> 			writeln(txt, sl.DelimitedText);
+> 			//スキル情報
+> 			sl.Clear;
+> 			sl.Add('0');
+> 			cnt := 0;
+> 			for j := 10000 to 10004 do begin
+> 				if GSkill[j].Lv <> 0 then begin
+> 					sl.Add(IntToStr(j));
+> 					sl.Add(IntToStr(GSkill[j].Lv));
+> 					Inc(cnt);
+> 				end;
+> 			end;
+> 			sl.Strings[0] := IntToStr(cnt);
+> 			writeln(txt, sl.DelimitedText);
+> 			//追放者リスト、同盟・敵対リスト
+> 			sl.Clear;
+> 			sl.Add(IntToStr(GuildBanList.Count));
+> 			sl.Add(IntToStr(RelAlliance.Count));
+> 			sl.Add(IntToStr(RelHostility.Count));
+> 			for j := 0 to GuildBanList.Count - 1 do begin
+> 				tgb := GuildBanList.Objects[j] as TGBan;
+> 				sl.Add(tgb.Name);
+> 				sl.Add(tgb.AccName);
+> 				sl.Add(tgb.Reason);
+> 			end;
+> 			for j := 0 to RelAlliance.Count - 1 do begin
+> 				tgl := RelAlliance.Objects[j] as TGRel;
+> 				sl.Add(IntToStr(tgl.ID));
+> 				sl.Add(tgl.GuildName);
+> 			end;
+> 			for j := 0 to RelHostility.Count - 1 do begin
+> 				tgl := RelHostility.Objects[j] as TGRel;
+> 				sl.Add(IntToStr(tgl.ID));
+> 				sl.Add(tgl.GuildName);
+> 			end;
+> 			writeln(txt, sl.DelimitedText);
+> 		end;
+> 	end;
+> 	CloseFile(txt);
+> {ギルド機能追加ココまで}
+diff U0x009+arena3/game.pas Test86_guild/game.pas
+93a94,100
+> {ギルド機能追加}
+> 	tg    :TGuild;
+> 	tg1   :TGuild;
+> 	tgb   :TGBan;
+> 	tgl   :TGRel;
+> 	tp1   :TPlayer;
+> {ギルド機能追加ココまで}
+173a181,194
+> {ギルド機能追加}
+> 						j := GuildList.IndexOf(tc.GuildID);
+> 						if (j <> -1) then begin
+> 							tg := GuildList.Objects[j] as TGuild;
+> 							//メンバーに通知
+> 							WFIFOW( 0, $016d);
+> 							WFIFOL( 2, tc.ID);
+> 							WFIFOL( 6, tc.CID);
+> 							WFIFOL(10, 1);
+> 							SendGuildMCmd(tc, 14, true);
+> 							//ギルド情報
+> 							SendGLoginInfo(tg, tc);
+> 						end;
+> {ギルド機能追加ココまで}
+312c333
+< 				CalcStat(tc);  
+---
+> 				CalcStat(tc);
+460a482,493
+> 
+> {ギルド機能追加}
+> 				j := GuildList.IndexOf(tc.GuildID);
+> 				if (j <> -1) then begin
+> 					tg := GuildList.Objects[j] as TGuild;
+> 					//告知送信
+> 					WFIFOW( 0, $016f);
+> 					WFIFOS( 2, tg.Notice[0], 60);
+> 					WFIFOS(62, tg.Notice[1], 120);
+> 					Socket.SendBuf(buf, 182);
+> 				end;
+> {ギルド機能追加ココまで}
+506c539
+<                                         //モンスター型NPC（攻撃しようとすると開始）
+---
+> 																				//モンスター型NPC（攻撃しようとすると開始）
+509,510c542,543
+< 					        //距離チェック
+< 				        	if (tc.Map <> tn.Map) or (abs(tc.Point.X - tn.Point.X) > 15) or (abs(tc.Point.Y - tn.Point.Y) > 15) then begin
+---
+> 									//距離チェック
+> 									if (tc.Map <> tn.Map) or (abs(tc.Point.X - tn.Point.X) > 15) or (abs(tc.Point.Y - tn.Point.Y) > 15) then begin
+518c551
+< 				        			Socket.SendBuf(buf, 6);
+---
+> 											Socket.SendBuf(buf, 6);
+571c604
+<                                         end;
+---
+> 																				end;
+642,643c675,676
+< 						        Val(Copy(str, 5, 256), i, k);
+< 						        if (k = 0) and (i >= 0) and (i <= 20) and (i <> 13) then begin
+---
+> 										Val(Copy(str, 5, 256), i, k);
+> 										if (k = 0) and (i >= 0) and (i <= 20) and (i <> 13) then begin
+645,651c678,684
+< 							        //ステータス再計算
+< 						        	tc.ClothesColor := 0; //強制的に初期値
+< 						        	SendCStat(tc);
+< 						        	CalcStat(tc);
+< 						        	SendCSkillList(tc);
+< 						        	WFIFOW(0, $00c3);
+< 						        	WFIFOL(2, tc.ID);
+---
+> 											//ステータス再計算
+> 											tc.ClothesColor := 0; //強制的に初期値
+> 											SendCStat(tc);
+> 											CalcStat(tc);
+> 											SendCSkillList(tc);
+> 											WFIFOW(0, $00c3);
+> 											WFIFOL(2, tc.ID);
+653,656c686,689
+< 						        	WFIFOB(7, i);
+< 						        	SendBCmd(tm, tc.Point, 8);
+< 						        end;
+<                                                 end;
+---
+> 											WFIFOB(7, i);
+> 											SendBCmd(tm, tc.Point, 8);
+> 										end;
+> 																								end;
+753c786
+< 						end else if Copy(str, 8, 4) = 'cart' then begin
+---
+> 						end else if ((tc.JID = 5) or (tc.JID = 10)) and (Copy(str, 8, 4) = 'cart') then begin
+757c790
+< 						end else if Copy(str, 8, 6) = 'falcon' then begin
+---
+> 						end else if (tc.JID = 11) and (Copy(str, 8, 6) = 'falcon') then begin
+759c792
+< 						end else if (tc.JID = 7) and (Copy(str, 8, 4) = 'peko') then begin
+---
+> 						end else if ((tc.JID = 7) or (tc.JID = 14)) and (Copy(str, 8, 4) = 'peko') then begin
+821a855,867
+> 					end else if (Copy(str, 1, 4) = 'raw ') and ((DebugCMD and $2000) <> 0) then begin
+> 						//任意パケテスト
+> 						sl := TStringList.Create;
+> 						sl.DelimitedText := Copy(str, 5, 256);
+> 						try
+> 							if (sl.Count = 0) then continue;
+> 							for i := 0 to sl.Count - 1 do begin
+> 								WFIFOB(i, StrToInt('$' + sl.Strings[i]));
+> 							end;
+> 							Socket.SendBuf(buf, i);
+> 						finally
+> 							sl.Free();
+> 						end;
+879,882d924
+< {露店スキル追加}
+< 				//露店中のアイテム使用無効
+< 				if (tc.VenderID <> 0) then continue;
+< {露店スキル追加ココまで}
+918,919c960,967
+< 					WFIFOW(0, $0195);
+< 					with tc do begin
+---
+> {ギルド機能追加}
+> 					if (tc.GuildID = 0) then begin
+> 						WFIFOW(0, $0095);
+> 						WFIFOL( 2, l);
+> 						WFIFOS( 6, tc.Name, 24);
+> 						Socket.SendBuf(buf, 30);
+> 					end else begin
+> 						WFIFOW(0, $0195);
+921,927c969,973
+< 						WFIFOS( 6, Name, 24);
+< 						WFIFOS(30, PartyName, 24);
+< 						WFIFOS(54, GuildName, 24);
+< 						WFIFOS(78, ClassName, 24);
+< 						//WFIFOS(30, 'もげ', 24);
+< 						//WFIFOS(54, 'BlueDestiny', 24);
+< 						//WFIFOS(78, '先生!人居ません(´□｀；', 24);
+---
+> 						WFIFOS( 6, tc.Name, 24);
+> 						WFIFOS(30, tc.PartyName, 24);
+> 						WFIFOS(54, tc.GuildName, 24);
+> 						WFIFOS(78, tc.ClassName, 24);
+> 						Socket.SendBuf(buf, 102);
+929c975
+< 					Socket.SendBuf(buf, 102);
+---
+> {ギルド機能追加ココまで}
+1601a1648,1651
+> {精錬NPC機能追加}
+> 				//装備ロックチェック
+> 				if tc.EqLock = true then continue;
+> {精錬NPC機能追加ココまで}
+1662,1665d1711
+< {精錬NPC機能追加}
+<         //装備ロックチェック
+< 				if tc.EqLock = true then continue;
+< {精錬NPC機能追加ココまで}
+1815a1862,1865
+> {精錬NPC機能追加}
+> 				//装備ロックチェック
+> 				if tc.EqLock = true then continue;
+> {精錬NPC機能追加ココまで}
+1976d2025
+< {チャットルーム機能追加}
+1977a2027,2181
+> 		$00c8: //NPCのお店から買う
+> 			begin
+> 				tm := tc.MData;
+> 				tn := tm.NPC.IndexOfObject(tc.TalkNPCID) as TNPC;
+> 				if (tn.Map <> tc.Map) or (abs(tn.Point.X - tc.Point.X) > 15)
+> 															or (abs(tn.Point.Y - tc.Point.Y) > 15) then begin
+> 					//視界の外のNPCからは買えない
+> 					continue;
+> 				end;
+> 				RFIFOW(2, w);
+> 				l := 0;
+> 				weight := 0;
+> 				k := -1;
+> 				SetLength(ww, ((w - 4) div 4), 2);
+> 				for i := 0 to ((w - 4) div 4) - 1 do begin
+> 					RFIFOW(4 + i*4, w1);
+> 					RFIFOW(6 + i*4, w2);
+> 					ww[i][0] := w1;
+> 					ww[i][1] := w2;
+> 					k := -1;
+> 					for j := 0 to Length(tn.ShopItem) - 1 do begin
+> 						if tn.ShopItem[j].ID = w2 then begin
+> 							k := j;
+> 							if tc.Skill[37].Lv <> 0 then begin
+> 								l := l + (tn.ShopItem[j].Price * cardinal(tc.Skill[37].Data.Data1[tc.Skill[37].Lv]) div 100) * w1;
+> 							end else begin
+> 								l := l + tn.ShopItem[j].Price * w1;
+> 							end;
+> 							weight := weight + cardinal(tn.ShopItem[j].Data.Weight) * cardinal(w1);
+> 							break;
+> 						end;
+> 					end;
+> 					if k = -1 then break;
+> 				end;
+> 				if tc.Zeny < l then begin
+> 					//お金が足りない
+> 					WFIFOW(0, $00ca);
+> 					WFIFOB(2, 1);	//1=お金が足りない 2=重量オーバー 3=アイテム最大種類数オーバー
+> 					Socket.SendBuf(buf, 3);
+> 				end else if cardinal(tc.MaxWeight - tc.Weight) < weight then begin
+> 					//重量オーバー
+> 					WFIFOW(0, $00ca);
+> 					WFIFOB(2, 2);	//1=お金が足りない 2=重量オーバー 3=アイテム最大種類数オーバー
+> 					Socket.SendBuf(buf, 3);
+> 				end else if k <> -1 then begin
+> 					for k := 0 to ((w - 4) div 4) - 1 do begin
+> 						td := nil;
+> 						for j := 0 to Length(tn.ShopItem) - 1 do begin
+> 							if tn.ShopItem[j].ID = ww[k][1] then begin
+> 								td := tn.ShopItem[j].Data;
+> 								if tc.Skill[37].Lv <> 0 then begin
+> 									l := (tn.ShopItem[j].Price * cardinal(tc.Skill[37].Data.Data1[tc.Skill[37].Lv]) div 100);
+> 								end else begin
+> 									l := tn.ShopItem[j].Price;
+> 								end;
+> 								if l = 0 then l := 1;
+> 								l := l * ww[k][0];
+> 								break;
+> 							end;
+> 						end;
+> 
+> 						if td = nil then continue;
+> 						j := SearchCInventory(tc, ww[k][1], td.IEquip);
+> 						if j <> 0 then begin
+> 							//アイテム追加
+> 							tc.Item[j].ID := ww[k][1];
+> 							tc.Item[j].Amount := tc.Item[j].Amount + ww[k][0];
+> 							tc.Item[j].Equip := 0;
+> 							tc.Item[j].Identify := 1;
+> 							tc.Item[j].Refine := 0;
+> 							tc.Item[j].Attr := 0;
+> 							tc.Item[j].Card[0] := 0;
+> 							tc.Item[j].Card[1] := 0;
+> 							tc.Item[j].Card[2] := 0;
+> 							tc.Item[j].Card[3] := 0;
+> 							tc.Item[j].Data := td;
+> 
+> 							tc.Weight := tc.Weight + td.Weight * ww[k][0];
+> 							tc.Zeny := tc.Zeny - l;
+> 							SendCGetItem(tc, j, ww[k][0]);
+> 						end else begin
+> 							//これ以上もてない(時の処理：未)
+> 						end;
+> 					end;
+> 
+> 					//重量更新
+> 					WFIFOW(0, $00b0);
+> 					WFIFOW(2, $0018);
+> 					WFIFOL(4, tc.Weight);
+> 					Socket.SendBuf(buf, 8);
+> 					//所持金更新
+> 					WFIFOW(0, $00b1);
+> 					WFIFOW(2, $0014);
+> 					WFIFOL(4, tc.Zeny);
+> 					Socket.SendBuf(buf, 8);
+> 					//取引ができました
+> 					WFIFOW(0, $00ca);
+> 					WFIFOB(2, 0);
+> 					Socket.SendBuf(buf, 3);
+> 				end else begin
+> 					//不正な処理（店にないものを買おうとした）
+> 					WFIFOW(0, $00ca);
+> 					WFIFOB(2, 3);  //1=お金が足りない 2=重量オーバー 3=アイテム最大種類数オーバー
+> 					Socket.SendBuf(buf, 3);
+> 				end;
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$00c9: //NPCのお店に売る
+> 			begin
+> 				tm := tc.MData;
+> 				tn := tm.NPC.IndexOfObject(tc.TalkNPCID) as TNPC;
+> 				if (tn.Map <> tc.Map) or (abs(tn.Point.X - tc.Point.X) > 15)
+> 															or (abs(tn.Point.Y - tc.Point.Y) > 15) then begin
+> 					//視界の外のNPCには売れない
+> 					continue;
+> 				end;
+> 				RFIFOW(2, w);
+> 				for i := 1 to (w - 4) div 4 do begin
+> 					RFIFOW(0+i*4, w1);
+> 					RFIFOW(2+i*4, w2);
+> 					if (tc.Item[w1].ID <> 0) and (tc.Item[w1].Amount >= w2) and (tc.Item[w1].Equip = 0) then begin
+> 						td := tc.Item[w1].Data;
+> 						if tc.Skill[38].Lv <> 0 then begin
+> 							l := (td.Price div 2 * cardinal(tc.Skill[38].Data.Data1[tc.Skill[38].Lv]) div 100) * w2;
+> 						end else begin
+> 							l := td.Price div 2 * w2;
+> 						end;
+> 						tc.Weight := tc.Weight - td.Weight * w2;
+> 						tc.Zeny := tc.Zeny + l;
+> 						//アイテム数減少
+> 						WFIFOW( 0, $00af);
+> 						WFIFOW( 2, w1);
+> 						WFIFOW( 4, w2);
+> 						Socket.SendBuf(buf, 6);
+> 						Dec(tc.Item[w1].Amount, w2);
+> 						if tc.Item[w1].Amount = 0 then tc.Item[w1].ID := 0;
+> 					end;
+> 				end;
+> 				//重量更新
+> 				WFIFOW(0, $00b0);
+> 				WFIFOW(2, $0018);
+> 				WFIFOL(4, tc.Weight);
+> 				Socket.SendBuf(buf, 8);
+> 				//所持金更新
+> 				WFIFOW(0, $00b1);
+> 				WFIFOW(2, $0014);
+> 				WFIFOL(4, tc.Zeny);
+> 				Socket.SendBuf(buf, 8);
+> 				//取引ができました
+> 				WFIFOW(0, $00cb);
+> 				WFIFOB(2, 0);
+> 				Socket.SendBuf(buf, 3);
+> 			end;
+> 		//--------------------------------------------------------------------------
+> {チャットルーム機能追加}
+2264a2469,2501
+> 		$00e6: //取引要請応答
+> 			begin
+> 				RFIFOB(2, b);
+> 				tc1 := CharaPID.IndexOfObject(tc.PreDealID) as TChara;
+> 				if (tc1 = nil) then begin
+> 					//相手キャラ不存在
+> 					tc.PreDealID := 0;
+> 					WFIFOW(0, $00e7);
+> 					WFIFOB(2, 1);
+> 					Socket.SendBuf(buf, 3);
+> 				end else if (b = 3) or (b = 4) then begin
+> 					//要請返答(3=yes,4=no)
+> 					tc.PreDealID := 0;
+> 					tc1.PreDealID := 0;
+> 					WFIFOW(0, $00e7);
+> 					WFIFOB(2, b);
+> 					Socket.SendBuf(buf, 3);
+> 					tc1.Socket.SendBuf(buf, 3);
+> 					//仮設倉庫作成
+> 					if (b = 3) then begin
+> 						tdl := TDealings.Create;
+> 						DealMaxID := DealMaxID + 1;
+> 						tdl.ID := DealMaxID;
+> 						tc.DealingID := tdl.ID;
+> 						tc1.DealingID := tdl.ID;
+> 						tdl.UserID[0] := tc1.ID;
+> 						tdl.USerID[1] := tc.ID;
+> 						DealingList.AddObject(tdl.ID, tdl);
+> 						//DebugOut.Lines.Add(Format('StartDealing ID = %d : Char1 = %S : Char2 = %s', [tdl.ID, tc1.Name, tc.Name]));
+> 					end;
+> 				end;
+> 			end;
+> 		//--------------------------------------------------------------------------
+2337,2369d2573
+< 		$00e6: //取引要請応答
+< 			begin
+< 				RFIFOB(2, b);
+< 				tc1 := CharaPID.IndexOfObject(tc.PreDealID) as TChara;
+< 				if (tc1 = nil) then begin
+< 					//相手キャラ不存在
+< 					tc.PreDealID := 0;
+< 					WFIFOW(0, $00e7);
+< 					WFIFOB(2, 1);
+< 					Socket.SendBuf(buf, 3);
+< 				end else if (b = 3) or (b = 4) then begin
+< 					//要請返答(3=yes,4=no)
+< 					tc.PreDealID := 0;
+< 					tc1.PreDealID := 0;
+< 					WFIFOW(0, $00e7);
+< 					WFIFOB(2, b);
+< 					Socket.SendBuf(buf, 3);
+< 					tc1.Socket.SendBuf(buf, 3);
+< 					//仮設倉庫作成
+< 					if (b = 3) then begin
+< 						tdl := TDealings.Create;
+< 						DealMaxID := DealMaxID + 1;
+< 						tdl.ID := DealMaxID;
+< 						tc.DealingID := tdl.ID;
+< 						tc1.DealingID := tdl.ID;
+< 						tdl.UserID[0] := tc1.ID;
+< 						tdl.USerID[1] := tc.ID;
+< 						DealingList.AddObject(tdl.ID, tdl);
+< 						//DebugOut.Lines.Add(Format('StartDealing ID = %d : Char1 = %S : Char2 = %s', [tdl.ID, tc1.Name, tc.Name]));
+< 					end;
+< 				end;
+< 			end;
+< 		//--------------------------------------------------------------------------
+2527,2682c2731
+< 
+< 		$00c8: //NPCのお店から買う
+< 			begin
+< 				tm := tc.MData;
+< 				tn := tm.NPC.IndexOfObject(tc.TalkNPCID) as TNPC;
+< 				if (tn.Map <> tc.Map) or (abs(tn.Point.X - tc.Point.X) > 15)
+< 															or (abs(tn.Point.Y - tc.Point.Y) > 15) then begin
+< 					//視界の外のNPCからは買えない
+< 					continue;
+< 				end;
+< 				RFIFOW(2, w);
+< 				l := 0;
+< 				weight := 0;
+< 				k := -1;
+< 				SetLength(ww, ((w - 4) div 4), 2);
+< 				for i := 0 to ((w - 4) div 4) - 1 do begin
+< 					RFIFOW(4 + i*4, w1);
+< 					RFIFOW(6 + i*4, w2);
+< 					ww[i][0] := w1;
+< 					ww[i][1] := w2;
+< 					k := -1;
+< 					for j := 0 to Length(tn.ShopItem) - 1 do begin
+< 						if tn.ShopItem[j].ID = w2 then begin
+< 							k := j;
+< 							if tc.Skill[37].Lv <> 0 then begin
+< 								l := l + (tn.ShopItem[j].Price * cardinal(tc.Skill[37].Data.Data1[tc.Skill[37].Lv]) div 100) * w1;
+< 							end else begin
+< 								l := l + tn.ShopItem[j].Price * w1;
+< 							end;
+< 							weight := weight + cardinal(tn.ShopItem[j].Data.Weight) * cardinal(w1);
+< 							break;
+< 						end;
+< 					end;
+< 					if k = -1 then break;
+< 				end;
+< 				if tc.Zeny < l then begin
+< 					//お金が足りない
+< 					WFIFOW(0, $00ca);
+< 					WFIFOB(2, 1);	//1=お金が足りない 2=重量オーバー 3=アイテム最大種類数オーバー
+< 					Socket.SendBuf(buf, 3);
+< 				end else if cardinal(tc.MaxWeight - tc.Weight) < weight then begin
+< 					//重量オーバー
+< 					WFIFOW(0, $00ca);
+< 					WFIFOB(2, 2);	//1=お金が足りない 2=重量オーバー 3=アイテム最大種類数オーバー
+< 					Socket.SendBuf(buf, 3);
+< 				end else if k <> -1 then begin
+< 					for k := 0 to ((w - 4) div 4) - 1 do begin
+< 						td := nil;
+< 						for j := 0 to Length(tn.ShopItem) - 1 do begin
+< 							if tn.ShopItem[j].ID = ww[k][1] then begin
+< 								td := tn.ShopItem[j].Data;
+< 								if tc.Skill[37].Lv <> 0 then begin
+< 									l := (tn.ShopItem[j].Price * cardinal(tc.Skill[37].Data.Data1[tc.Skill[37].Lv]) div 100);
+< 								end else begin
+< 									l := tn.ShopItem[j].Price;
+< 								end;
+< 								if l = 0 then l := 1;
+< 								l := l * ww[k][0];
+< 								break;
+< 							end;
+< 						end;
+< 
+< 						if td = nil then continue;
+< 						j := SearchCInventory(tc, ww[k][1], td.IEquip);
+< 						if j <> 0 then begin
+< 							//アイテム追加
+< 							tc.Item[j].ID := ww[k][1];
+< 							tc.Item[j].Amount := tc.Item[j].Amount + ww[k][0];
+< 							tc.Item[j].Equip := 0;
+< 							tc.Item[j].Identify := 1;
+< 							tc.Item[j].Refine := 0;
+< 							tc.Item[j].Attr := 0;
+< 							tc.Item[j].Card[0] := 0;
+< 							tc.Item[j].Card[1] := 0;
+< 							tc.Item[j].Card[2] := 0;
+< 							tc.Item[j].Card[3] := 0;
+< 							tc.Item[j].Data := td;
+< 
+< 							tc.Weight := tc.Weight + td.Weight * ww[k][0];
+< 							tc.Zeny := tc.Zeny - l;
+< 							SendCGetItem(tc, j, ww[k][0]);
+< 						end else begin
+< 							//これ以上もてない(時の処理：未)
+< 						end;
+< 					end;
+< 
+< 					//重量更新
+< 					WFIFOW(0, $00b0);
+< 					WFIFOW(2, $0018);
+< 					WFIFOL(4, tc.Weight);
+< 					Socket.SendBuf(buf, 8);
+< 					//所持金更新
+< 					WFIFOW(0, $00b1);
+< 					WFIFOW(2, $0014);
+< 					WFIFOL(4, tc.Zeny);
+< 					Socket.SendBuf(buf, 8);
+< 					//取引ができました
+< 					WFIFOW(0, $00ca);
+< 					WFIFOB(2, 0);
+< 					Socket.SendBuf(buf, 3);
+< 				end else begin
+< 					//不正な処理（店にないものを買おうとした）
+< 					WFIFOW(0, $00ca);
+< 					WFIFOB(2, 3);  //1=お金が足りない 2=重量オーバー 3=アイテム最大種類数オーバー
+< 					Socket.SendBuf(buf, 3);
+< 				end;
+< 			end;
+< 		//--------------------------------------------------------------------------
+< 		$00c9: //NPCのお店に売る
+< 			begin
+< 				tm := tc.MData;
+< 				tn := tm.NPC.IndexOfObject(tc.TalkNPCID) as TNPC;
+< 				if (tn.Map <> tc.Map) or (abs(tn.Point.X - tc.Point.X) > 15)
+< 															or (abs(tn.Point.Y - tc.Point.Y) > 15) then begin
+< 					//視界の外のNPCには売れない
+< 					continue;
+< 				end;
+< 				RFIFOW(2, w);
+< 				for i := 1 to (w - 4) div 4 do begin
+< 					RFIFOW(0+i*4, w1);
+< 					RFIFOW(2+i*4, w2);
+< 					if (tc.Item[w1].ID <> 0) and (tc.Item[w1].Amount >= w2) and (tc.Item[w1].Equip = 0) then begin
+< 						td := tc.Item[w1].Data;
+< 						if tc.Skill[38].Lv <> 0 then begin
+< 							l := (td.Price div 2 * cardinal(tc.Skill[38].Data.Data1[tc.Skill[38].Lv]) div 100) * w2;
+< 						end else begin
+< 							l := td.Price div 2 * w2;
+< 						end;
+< 						tc.Weight := tc.Weight - td.Weight * w2;
+< 						tc.Zeny := tc.Zeny + l;
+< 						//アイテム数減少
+< 						WFIFOW( 0, $00af);
+< 						WFIFOW( 2, w1);
+< 						WFIFOW( 4, w2);
+< 						Socket.SendBuf(buf, 6);
+< 						Dec(tc.Item[w1].Amount, w2);
+< 						if tc.Item[w1].Amount = 0 then tc.Item[w1].ID := 0;
+< 					end;
+< 				end;
+< 				//重量更新
+< 				WFIFOW(0, $00b0);
+< 				WFIFOW(2, $0018);
+< 				WFIFOL(4, tc.Weight);
+< 				Socket.SendBuf(buf, 8);
+< 				//所持金更新
+< 				WFIFOW(0, $00b1);
+< 				WFIFOW(2, $0014);
+< 				WFIFOL(4, tc.Zeny);
+< 				Socket.SendBuf(buf, 8);
+< 				//取引ができました
+< 				WFIFOW(0, $00cb);
+< 				WFIFOB(2, 0);
+< 				Socket.SendBuf(buf, 3);
+< 			end;
+< 		//--------------------------------------------------------------------------
+< 		$00f3: //倉庫にアイテム放り込み
+---
+> 		$00f3: //倉庫にアイテム放り込み
+2804a2854,2860
+> 		$00f7: //倉庫閉じ
+> 			begin
+> 				tc.AMode := 0;
+> 				WFIFOW( 0, $00f8);
+> 				Socket.SendBuf(buf, 2);
+> 			end;
+> 		//--------------------------------------------------------------------------
+2920,2927d2975
+< {チャットルーム機能追加}
+< 				//入室中のスキル使用無効
+< 				if (tc.ChatRoomID <> 0) then continue;
+< {チャットルーム機能追加ココまで}
+< {露店スキル追加}
+< 				//露店中のスキル使用無効
+< 				if (tc.VenderID <> 0) then continue;
+< {露店スキル追加ココまで}
+2951,2958d2998
+< {チャットルーム機能追加}
+< 				//入室中のスキル使用無効
+< 				if (tc.ChatRoomID <> 0) then continue;
+< {チャットルーム機能追加ココまで}
+< {露店スキル追加}
+< 				//露店中のスキル使用無効
+< 				if (tc.VenderID <> 0) then continue;
+< {露店スキル追加ココまで}
+3044,3050d3083
+< 		$00f7: //倉庫閉じ
+< 			begin
+< 				tc.AMode := 0;
+< 				WFIFOW( 0, $00f8);
+< 				Socket.SendBuf(buf, 2);
+< 			end;
+< 		//--------------------------------------------------------------------------
+3054,3069c3087,3105
+< 				if (tc.Skill[w].Lv < tc.Skill[w].Data.MasterLV) and (tc.SkillPoint > 0) then begin
+< 					tc.Skill[w].Lv	:= tc.Skill[w].Lv + 1;
+< 					tc.SkillPoint	:= tc.SkillPoint - 1;
+< 
+< 					WFIFOW(0, $010e);
+< 					WFIFOW(2, w);
+< 					WFIFOW(4, tc.Skill[w].Lv);
+< 					WFIFOW(6, tc.Skill[w].Data.SP[tc.Skill[w].Lv]);
+< 					WFIFOW(8, tc.Skill[w].Data.Range);
+< 					if (tc.Skill[w].Lv < tc.Skill[w].Data.MasterLV) and (tc.SkillPoint > 0) then b := 1 else b := 0;
+< 					WFIFOB(10, b);
+< 					Socket.SendBuf(buf,11);
+< 					SendCSkillList(tc);
+< 
+< 					CalcStat(tc);
+< 					SendCStat(tc);
+---
+> {ギルド機能追加}
+> 				if (w >= 10000) then begin
+> 					//ギルドスキル
+> 					j := GuildList.IndexOf(tc.GuildID);
+> 					if (j <> -1) then begin
+> 						tg := GuildList.Objects[j] as TGuild;
+> 						with tg do begin
+> 							if (GSkill[w].Lv < GSkill[w].Data.MasterLV) and (GSkillPoint > 0)
+> 							and (tc.Name = MasterName) then begin
+> 								GSkill[w].Lv	:= GSkill[w].Lv + 1;
+> 								GSkillPoint	:= GSkillPoint - 1;
+> 								if (w = 10004) then begin
+> 									MaxUsers := 16 + GSkill[w].Data.Data1[GSkill[w].Lv];
+> 									SendGuildInfo(tc, 0, true);
+> 								end;
+> 								SendGuildInfo(tc, 3, true);
+> 							end;
+> 						end;
+> 					end;
+3071,3079c3107,3135
+< 					//失敗
+< 					WFIFOW(0, $010e);
+< 					WFIFOW(2, w);
+< 					WFIFOW(4, tc.Skill[w].Lv);
+< 					WFIFOW(6, tc.Skill[w].Data.SP[tc.Skill[w].Lv]);
+< 					WFIFOW(8, tc.Skill[w].Data.Range);
+< 					if (tc.Skill[w].Lv < tc.Skill[w].Data.MasterLV) and (tc.SkillPoint > 0) then b := 1 else b := 0;
+< 					WFIFOB(10, b);
+< 					Socket.SendBuf(buf,11);
+---
+> {ギルド機能追加ココまで}
+> 					if (tc.Skill[w].Lv < tc.Skill[w].Data.MasterLV) and (tc.SkillPoint > 0) then begin
+> 						tc.Skill[w].Lv	:= tc.Skill[w].Lv + 1;
+> 						tc.SkillPoint	:= tc.SkillPoint - 1;
+> 
+> 						WFIFOW(0, $010e);
+> 						WFIFOW(2, w);
+> 						WFIFOW(4, tc.Skill[w].Lv);
+> 						WFIFOW(6, tc.Skill[w].Data.SP[tc.Skill[w].Lv]);
+> 						WFIFOW(8, tc.Skill[w].Data.Range);
+> 						if (tc.Skill[w].Lv < tc.Skill[w].Data.MasterLV) and (tc.SkillPoint > 0) then b := 1 else b := 0;
+> 						WFIFOB(10, b);
+> 						Socket.SendBuf(buf,11);
+> 						SendCSkillList(tc);
+> 
+> 						CalcStat(tc);
+> 						SendCStat(tc);
+> 					end else begin
+> 						//失敗
+> 						WFIFOW(0, $010e);
+> 						WFIFOW(2, w);
+> 						WFIFOW(4, tc.Skill[w].Lv);
+> 						WFIFOW(6, tc.Skill[w].Data.SP[tc.Skill[w].Lv]);
+> 						WFIFOW(8, tc.Skill[w].Data.Range);
+> 						if (tc.Skill[w].Lv < tc.Skill[w].Data.MasterLV) and (tc.SkillPoint > 0) then b := 1 else b := 0;
+> 						WFIFOB(10, b);
+> 						Socket.SendBuf(buf,11);
+> 					end;
+> {ギルド機能追加}
+3080a3137
+> {ギルド機能追加ココまで}
+3519a3577,3579
+> {露店スキル追加}
+> 				if(tc.VenderID <> 0) then continue;
+> {露店スキル追加ココまで}
+3585a3646,3648
+> {露店スキル追加}
+> 				if(tc.VenderID <> 0) then continue;
+> {露店スキル追加ココまで}
+3997a4061,4537
+> {ギルド機能追加}
+> 		$014d: //ギルド情報表示開始
+> 			begin
+> 				j := GuildList.IndexOf(tc.GuildID);
+> 				if (j = -1) then continue;
+> 				tg := GuildList.Objects[j] as TGuild;
+> 				WFIFOW( 0, $014e);
+> 				if (tg.MasterName = tc.Name) then begin
+> 					WFIFOL( 2, $d7); //ギルドマスター
+> 				end else begin
+> 					WFIFOL( 2, $57); //一般
+> 				end;
+> 				Socket.SendBuf(buf, 6);
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$014f: //ギルド表示タブ
+> 			begin
+> 				RFIFOL(2, l);
+> 				SendGuildInfo(tc, l);
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$0151: //エンブレム要求
+> 			begin
+> 				RFIFOL(2, l);
+> 				j := GuildList.IndexOf(l);
+> 				if (j = -1) then continue;
+> 				tg := GuildList.Objects[j] as TGuild;
+> 				if (tg.Emblem = 0) then continue;
+> 				w := LoadEmblem(tg);
+> 				if (w = 0) then continue;
+> 				Socket.SendBuf(buf, w);
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$0153: //エンブレム変更
+> 			begin
+> 				RFIFOW(2, w);
+> 				if (w <= 4) then continue;
+> 				j := GuildList.IndexOf(tc.GuildID);
+> 				if (j = -1) then continue;
+> 				tg := GuildList.Objects[j] as TGuild;
+> 				if (tg.MasterName = tc.Name) then begin
+> 					if (tg.Emblem > 0) then begin
+> 						//現在のエンブレムを削除
+> 						str := AppPath + 'emblem\' + IntToStr(tg.ID) + '_' + IntToStr(tg.Emblem) + '.emb';
+> 						if FileExists(str) then DeleteFile(str);
+> 					end;
+> 
+> 					//エンブレム更新
+> 					Inc(tg.Emblem);
+> 					SaveEmblem(tg, w - 4);
+> 				end;
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$0155: //ギルド員情報変更
+> 			begin
+> 				RFIFOW( 2, w);
+> 				j := GuildList.IndexOf(tc.GuildID);
+> 				if (j = -1) then continue;
+> 				tg := GuildList.Objects[j] as TGuild;
+> 				if (tg.MasterName = tc.Name) then begin
+> 					for i := 0 to (w - 4) div 12 - 1 do begin
+> 						RFIFOL(i * 12 + 4, l);
+> 						RFIFOL(i * 12 + 12, l2);
+> 						if (l2 >= 20) then continue;
+> 						tc1 := Chara.Objects[Chara.IndexOf(l)] as TChara;
+> 						if (tc1 = nil) then continue;
+> 						if (tc1.Name <> tg.MasterName) and (l2 <> 0) then begin
+> 							tg.MemberPos[tc1.GuildPos] := l2;
+> 							tc1.ClassName := tg.PosName[l2];
+> 						end;
+> 					end;
+> 					//変更通知
+> 					WFIFOW( 0, $0156);
+> 					SendGuildMCmd(tc, w);
+> 				end;
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$0159: //ギルド脱退
+> 			begin
+> 				RFIFOL( 2, l);
+> 				str := RFIFOS(14, 40);
+> 				j := GuildList.IndexOf(tc.GuildID);
+> 				if (j = -1) then continue;
+> 				tg := GuildList.Objects[j] as TGuild;
+> 				if (tg.ID <> l) then continue;
+> 
+> 				if (tc.Name <> tg.MasterName) and (tg.RegUsers > 1) then begin
+> 					//通知
+> 					WFIFOW( 0, $015a);
+> 					WFIFOS( 2, tc.Name, 24);
+> 					WFIFOS(26, str, 40);
+> 					SendGuildMCmd(tc, 66);
+> 					//メンバー削除処理
+> 					for i := tc.GuildPos to 35 do begin
+> 						tg.MemberID[i] := tg.MemberID[i + 1];
+> 						tg.Member[i] := tg.Member[i + 1];
+> 						tg.MemberPos[i] := tg.MemberPos[i + 1];
+> 						tg.MemberEXP[i] := tg.MemberEXP[i + 1];
+> 					end;
+> 					Dec(tg.RegUsers);
+> 					tc.GuildID := 0;
+> 					tc.GuildName := '';
+> 					tc.ClassName := '';
+> 					tc.GuildPos := 0;
+> 				end;
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$015b: //ギルド追放
+> 			begin
+> 				RFIFOL( 2, l);
+> 				RFIFOL(10, l2);
+> 				str := RFIFOS(14, 40);
+> 				j := GuildList.IndexOf(tc.GuildID);
+> 				if (j = -1) then continue;
+> 				tg := GuildList.Objects[j] as TGuild;
+> 				if (tg.ID <> l) then continue;
+> 				tc1 := Chara.IndexOfObject(l2) as TChara;
+> 				if tc1 = nil then Continue;
+> 				tp1 := Player.IndexOfObject(tc1.ID) as TPlayer;
+> 
+> 				//通知
+> 				WFIFOW( 0, $015c);
+> 				WFIFOS( 2, tc1.Name, 24);
+> 				WFIFOS(26, str, 40);
+> 				WFIFOS(66, tp1.Name, 24);
+> 				SendGuildMCmd(tc, 90);
+> 				//追放者リストに追加
+> 				tgb := TGBan.Create;
+> 				tgb.Name := tc1.Name;
+> 				tgb.AccName := tp1.Name;
+> 				tgb.Reason := str;
+> 				tg.GuildBanList.AddObject(tgb.Name, tgb);
+> 				//メンバー削除処理
+> 				for i := tc1.GuildPos to 35 do begin
+> 					tg.MemberID[i] := tg.MemberID[i + 1];
+> 					tg.Member[i] := tg.Member[i + 1];
+> 					tg.MemberPos[i] := tg.MemberPos[i + 1];
+> 					tg.MemberEXP[i] := tg.MemberEXP[i + 1];
+> 				end;
+> 				Dec(tg.RegUsers);
+> 				tc1.GuildID := 0;
+> 				tc1.GuildName := '';
+> 				tc1.ClassName := '';
+> 				tc1.GuildPos := 0;
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$015d: //ギルド解散
+> 			begin
+> 				str := RFIFOS(2, 24);
+> 				j := GuildList.IndexOf(tc.GuildID);
+> 				if (j = -1) then continue;
+> 				tg := GuildList.Objects[j] as TGuild;
+> 				if (tg.Name = str) and (tg.RegUsers = 1) and (tg.MasterName = tc.Name) then begin
+> 					//通知
+> 					WFIFOW( 0, $016c);
+> 					WFIFOL( 2, 0);
+> 					WFIFOL( 6, 0);
+> 					WFIFOL(10, 0);
+> 					WFIFOB(14, 0);
+> 					WFIFOL(15, 0);
+> 					WFIFOS(19, tg.Name, 24);
+> 					Socket.SendBuf(buf, 43);
+> 					WFIFOW( 0, $015e);
+> 					WFIFOL( 2, 0);
+> 					Socket.SendBuf(buf, 6);
+> 
+> 					//ギルド削除処理
+> 					GuildList.Delete(GuildList.IndexOf(tc.GuildID));
+> 					tc.GuildID := 0;
+> 					tc.GuildName := '';
+> 					tc.ClassName := '';
+> 					tc.GuildPos := 0;
+> 				end;
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$0161: //職位情報変更
+> 			begin
+> 				RFIFOW( 2, w);
+> 				j := GuildList.IndexOf(tc.GuildID);
+> 				if (j = -1) then continue;
+> 				tg := GuildList.Objects[j] as TGuild;
+> 				if (tg.MasterName = tc.Name) then begin
+> 					for i := 0 to (w - 4) div 40 - 1 do begin
+> 						RFIFOL(i * 40 + 4, l);
+> 						RFIFOL(i * 40 + 8, l2);
+> 						if (l2 div 16 = 1) then tg.PosInvite[l] := true else tg.PosInvite[l] := false;
+> 						if (l2 mod 16 = 1) then tg.PosPunish[l] := true else tg.PosPunish[l] := false;
+> 						RFIFOL(i * 40 + 16, l2);
+> 						if (l2 > 50) then l2 := 50;//50超は1ではなく50に設定
+> 						tg.PosEXP[l] := l2;
+> 						tg.PosName[l] := RFIFOS(i * 40 + 20, 24);
+> 					end;
+> 					//変更通知
+> 					WFIFOW( 0, $0174);
+> 					SendGuildMCmd(tc, w);
+> 				end;
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$0165: //ギルド作成
+> 			begin
+> 				RFIFOL(2, l);
+> 				str := RFIFOS(6, 24);
+> 				if (str = '') then continue;
+> 
+> 				//エンペリウムチェック
+> 				w := 0;
+> 				i := 0;
+> 				for j := 1 to 100 do begin
+> 					if (tc.Item[j].ID = 714) then begin
+> 						w := j;
+> 						break;
+> 					end;
+> 				end;
+> 				if (w = 0) then begin
+> 					//アイテム不足
+> 					i := 3;;
+> 				end else if (tc.GuildID <> 0) then begin
+> 					//既に他ギルドに加入済
+> 					i := 1;
+> 				end else begin
+> 					for j := 0 to GuildList.Count - 1 do begin
+> 						tg := GuildList.Objects[j] as TGuild;
+> 						if (tg.Name = str) then begin
+> 							//同名ギルド存在
+> 							i := 2;
+> 							break;
+> 						end;
+> 					end;
+> 				end;
+> 				if (i <> 0) then begin
+> 					//作成エラー
+> 					WFIFOW( 0, $0167);
+> 					WFIFOB( 2, i);
+> 					Socket.SendBuf(buf, 3);
+> 					continue;
+> 				end;
+> 
+> 				//アイテム減少
+> 				Dec(tc.Item[w].Amount);
+> 				if tc.Item[w].Amount = 0 then tc.Item[w].ID := 0;
+> 				tc.Weight := tc.Weight - tc.Item[w].Data.Weight;
+> 				WFIFOW( 0, $00af);
+> 				WFIFOW( 2, w);
+> 				WFIFOW( 4, 1);
+> 				Socket.SendBuf(buf, 6);
+> 				//重量減少
+> 				WFIFOW( 0, $00b0);
+> 				WFIFOW( 2, $0018);
+> 				WFIFOL( 4, tc.Weight);
+> 				Socket.SendBuf(buf, 8);
+> 
+> 				//ギルド作成
+> 				tg := TGuild.Create;
+> 				NowGuildID := NowGuildID + 1;
+> 				with tg do begin
+> 					ID := NowGuildID;
+> 					Name := str;
+> 					LV := 1;
+> 					EXP := 0;
+> 					MasterName := tc.Name;
+> 					RegUsers := 1;
+> 					MaxUsers := 16;
+> 					SLV := tc.BaseLV;
+> 					MemberID[0] := tc.CID;
+> 					Member[0] := tc;
+> 					for j := 0 to 19 do begin
+> 						if (j = 0) then begin
+> 							PosName[j] := 'Master';
+> 							PosInvite[j] := true;
+> 							PosPunish[j] := true;
+> 						end else begin
+> 							PosName[j] := 'Position ' + IntToStr(j + 1);
+> 							PosInvite[j] := false;
+> 							PosPunish[j] := false;
+> 						end;
+> 						PosEXP[j] := 0;
+> 					end;
+> 					for j := 10000 to 10004 do begin
+> 						if GSkillDB.IndexOf(j) <> -1 then begin
+> 							GSkill[j].Data := GSkillDB.IndexOfObject(j) as TSkillDB;
+> 						end;
+> 					end;
+> 					tc.GuildName := Name;
+> 					tc.GuildID := ID;
+> 					tc.ClassName := PosName[0];
+> 				end;
+> 				GuildList.AddObject(tg.ID, tg);
+> 				DebugOut.Lines.Add(Format('GuildName %s : ID = %d : Name = %s', [tg.Name, tg.MemberID[0], tg.Member[0].Name]));
+> 
+> 				//作成成功応答
+> 				WFIFOW( 0, $0167);
+> 				WFIFOB( 2, 0);
+> 				Socket.SendBuf(buf, 3);
+> 
+> 				//ギルド情報送信
+> 				SendGLoginInfo(tg, tc);
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$0168: //ギルド勧誘
+> 			begin
+> 				if (tc.GuildInv <> 0) then continue;//他に勧誘中(鯖キャン未対応)
+> 				RFIFOL( 2, l);
+> 				tc1 := CharaPID.IndexOfObject(l) as TChara;
+> 				if tc1 = nil then Continue;
+> 				j := GuildList.IndexOf(tc.GuildID);
+> 				if (j = -1) then continue;
+> 				tg := GuildList.Objects[j] as TGuild;
+> 				if (tg.GuildBanList.IndexOf(tc1.Name) <> -1) then continue;
+> 				if (tc1.GuildID = 0) then begin
+> 					if (tg.RegUsers < tg.MaxUsers) then begin
+> 						tc.GuildInv := tc1.CID;
+> 						WFIFOW( 0, $016a);
+> 						WFIFOL( 2, tc.GuildID);
+> 						WFIFOS( 6, tc.GuildName, 24);
+> 						tc1.Socket.SendBuf(buf, 30);
+> 					end else begin
+> 						WFIFOW( 0, $0169);
+> 						WFIFOB( 2, 3);
+> 						Socket.SendBuf(buf, 3);
+> 					end;
+> 				end else begin
+> 					WFIFOW( 0, $0169);
+> 					WFIFOB( 2, 0);
+> 					Socket.SendBuf(buf, 3);
+> 				end;
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$016b: //ギルド勧誘応答
+> 			begin
+> 				RFIFOL(2, l);
+> 				RFIFOL(6, l2);
+> 				j := GuildList.IndexOf(l);
+> 				if (j = -1) then continue;
+> 				tg := GuildList.Objects[j] as TGuild;
+> 				tc1 := nil;
+> 				for i := 0 to 35 do begin
+> 					if (tg.Member[i].GuildInv = tc.CID) then begin
+> 						tc1 := tg.Member[i];
+> 						break;
+> 					end;
+> 				end;
+> 				tg.Member[tc1.GuildPos].GuildInv := 0;
+> 				if (tc1 = nil) or (l2 > 1) then continue;
+> 				if (l2 = 1) then begin
+> 					with tg do begin
+> 						k := RegUsers;
+> 						if (k < MaxUsers) and (MemberID[k] = 0) then begin
+> 							//メンバー追加
+> 							MemberID[k] := tc.CID;
+> 							Member[k] := tc;
+> 							MemberPos[k] := 19;
+> 							MemberEXP[k] := 0;
+> 							SLV := SLV + tc.BaseLV;
+> 							RegUsers := RegUsers + 1;
+> 							tc.GuildID := ID;
+> 							tc.GuildName := Name;
+> 							tc.ClassName := PosName[19];
+> 							//パケ送信
+> 							WFIFOW( 0, $0169);
+> 							WFIFOB( 2, 2);
+> 							tc.Socket.SendBuf(buf, 3);
+> 							tc1.Socket.SendBuf(buf, 3);
+> 							SendGLoginInfo(tg, tc);
+> 						end;
+> 					end;
+> 				end else begin
+> 					WFIFOW( 0, $0169);
+> 					WFIFOB( 2, 1);
+> 					tc1.Socket.SendBuf(buf, 3);
+> 				end;
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$016e: //ギルド告知設定
+> 			begin
+> 				RFIFOL(2, l);
+> 				j := GuildList.IndexOf(tc.GuildID);
+> 				if (j = -1) then continue;
+> 				tg := GuildList.Objects[j] as TGuild;
+> 				if (tg.ID = l) and (tg.MasterName = tc.Name) then begin
+> 					tg.Notice[0] := RFIFOS(6, 60);
+> 					tg.Notice[1] := RFIFOS(66, 120);
+> 					WFIFOW( 0, $016f);
+> 					WFIFOS( 2, tg.Notice[0], 60);
+> 					WFIFOS(62, tg.Notice[1], 120);
+> 					SendGuildMCmd(tc, 182);
+> 				end;
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$0170: //ギルド同盟要請
+> 			begin
+> 				RFIFOL( 2, l);
+> 				RFIFOL(10, l2);
+> 				j := GuildList.IndexOf(tc.GuildID);
+> 				if (j = -1) then continue;
+> 				tg := GuildList.Objects[j] as TGuild;
+> 				tc1 := CharaPID.IndexOfObject(l) as TChara;
+> 				if tc1 = nil then Continue;
+> 				if (tg.MasterName <> tc.Name) then continue;
+> 				j := GuildList.IndexOf(tc1.GuildID);
+> 				if (j = -1) then continue;
+> 				tg1 := GuildList.Objects[j] as TGuild;
+> 
+> 				//同盟数チェック
+> 				k := -1;
+> 				if (tg.RelAlliance.IndexOf(tg1.Name) <> -1) then k := 0
+> 				else if (tg.RelAlliance.Count >= 3) then k := 4
+> 				else if (tg1.RelAlliance.Count >= 3) then k := 3;
+> 
+> 				//送信
+> 				if (k <> -1) then begin
+> 					WFIFOW( 0, $0173);
+> 					WFIFOB( 2, k);
+> 					Socket.SendBuf(buf, 3);
+> 				end else begin
+> 					WFIFOW( 0, $0171);
+> 					WFIFOL( 2, tc.CID);
+> 					WFIFOS( 6, tg.Name, 24);
+> 					tc1.Socket.SendBuf(buf, 30);
+> 				end;
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$0172: //ギルド同盟要請応答
+> 			begin
+> 				RFIFOL( 2, l);
+> 				RFIFOL( 6, l2);
+> 				j := GuildList.IndexOf(tc.GuildID);
+> 				if (j = -1) then continue;
+> 				tg := GuildList.Objects[j] as TGuild;
+> 				tc1 := Chara.IndexOfObject(l) as TChara;
+> 				if tc1 = nil then Continue;
+> 				if (tg.MasterName <> tc.Name) then continue;
+> 				j := GuildList.IndexOf(tc1.GuildID);
+> 				if (j = -1) then continue;
+> 				tg1 := GuildList.Objects[j] as TGuild;
+> 
+> 				//自分のギルドの同盟数チェック
+> 				k := -1;
+> 				if (tg.RelAlliance.IndexOf(tg1.Name) <> -1) then k := 0
+> 				else if (tg.RelAlliance.Count >= 3) then k := 4
+> 				else if (tg1.RelAlliance.Count >= 3) then k := 3;
+> 
+> 				if (l2 = 0) then begin
+> 					//拒否
+> 					k := 1;
+> 				end else if (k = -1) then begin
+> 					//承諾
+> 					if (tg1.RelHostility.IndexOf(tg.Name) <> -1) then KillGuildRelation(tg1, tg, tc1, tc, 1);
+> 					tgl := TGRel.Create;
+> 					tgl.ID := tg1.ID;
+> 					tgl.GuildName := tg1.Name;
+> 					tg.RelAlliance.AddObject(tgl.GuildName, tgl);
+> 					tgl := TGRel.Create;
+> 					tgl.ID := tg.ID;
+> 					tgl.GuildName := tg.Name;
+> 					tg1.RelAlliance.AddObject(tgl.GuildName, tgl);
+> 					k := 2;
+> 				end;
+> 
+> 				//送信
+> 				WFIFOW( 0, $0173);
+> 				WFIFOB( 2, k);
+> 				Socket.SendBuf(buf, 3);
+> 				tc1.Socket.SendBuf(buf, 3);
+> 
+> 				if (k = 2) then begin
+> 					WFIFOW( 0, $0185);
+> 					WFIFOL( 2, 0);
+> 					WFIFOL( 6, tg1.ID);
+> 					WFIFOS(10, tg1.Name, 24);
+> 					SendGuildMCmd(tc, 34);
+> 					WFIFOL( 6, tg.ID);
+> 					WFIFOS(10, tg.Name, 24);
+> 					SendGuildMCmd(tc1, 34);
+> 				end;
+> 			end;
+> {ギルド機能追加ココまで}
+> 		//--------------------------------------------------------------------------
+4134a4675,4747
+> {ギルド機能追加}
+> 		$017e: //ギルドチャット
+> 			begin
+> 				RFIFOW(2, w);
+> 				str := RFIFOS(4, w - 2);
+> 				if (GuildList.IndexOf(tc.GuildID) <> -1) then begin
+> 					WFIFOW(0, $017f);
+> 					WFIFOW(2, w);
+> 					WFIFOS(4, str, w);
+> 					SendGuildMCmd(tc, w);
+> 				end;
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$0180: //ギルド敵対設定
+> 			begin
+> 				RFIFOL( 2, l);
+> 				j := GuildList.IndexOf(tc.GuildID);
+> 				if (j = -1) then continue;
+> 				tg := GuildList.Objects[j] as TGuild;
+> 				if (tg.MasterName <> tc.Name) then continue;
+> 				tc1 := CharaPID.IndexOfObject(l) as TChara;
+> 				if tc1 = nil then Continue;
+> 				j := GuildList.IndexOf(tc1.GuildID);
+> 				if (j = -1) then continue;
+> 				tg1 := GuildList.Objects[j] as TGuild;
+> 
+> 				//同盟チェック
+> 				b := 0;
+> 				if (tg.RelAlliance.IndexOf(tg1.Name) <> -1) then KillGuildRelation(tg, tg1, tc, tc1, 0);
+> 				if (tg.RelHostility.IndexOf(tg1.Name) <> -1) then b := 2
+> 				else if (tg.RelHostility.Count >= 3) then b := 1;
+> 
+> 				if (b = 0) then begin
+> 					//敵対追加
+> 					tgl := TGRel.Create;
+> 					tgl.ID := tg1.ID;
+> 					tgl.GuildName := tg1.Name;
+> 					tg.RelHostility.AddObject(tgl.GuildName, tgl);
+> 
+> 					//パケ送信
+> 					WFIFOW( 0, $0185);
+> 					WFIFOL( 2, 1);
+> 					WFIFOL( 6, tg1.ID);
+> 					WFIFOS(10, tg1.Name, 24);
+> 					SendGuildMCmd(tc, 34);
+> 				end;
+> 
+> 				//正否送信
+> 				WFIFOW( 0, $0181);
+> 				WFIFOB( 0, b);
+> 				Socket.SendBuf(buf, 3);
+> 			end;
+> 		//--------------------------------------------------------------------------
+> 		$0183: //同盟・敵対解消
+> 			begin
+> 				RFIFOL( 2, l);
+> 				RFIFOL( 6, l2);
+> 				j := GuildList.IndexOf(tc.GuildID);
+> 				if (j = -1) then continue;
+> 				tg := GuildList.Objects[j] as TGuild;
+> 				if (tg.MasterName <> tc.Name) then continue;
+> 				j := GuildList.IndexOf(l);
+> 				if (j = -1) then continue;
+> 				tg1 := GuildList.Objects[j] as TGuild;
+> 				j := CharaName.IndexOf(tg1.MasterName);
+> 				if (j = -1) then continue;
+> 				tc1 := CharaName.Objects[j] as TChara;
+> 
+> 				//解消
+> 				KillGuildRelation(tg, tg1, tc, tc1, l2);
+> 			end;
+> {ギルド機能追加ココまで}
+> 		//--------------------------------------------------------------------------
+4384a4998
+> 				end;
+4424d5037
+<                                 end;
+4426c5039
+<                 end;
+---
+> 								end;
+4482c5095
+<                                                                 SendBCmd( tm, ts.Point, 7 );
+---
+> 																																SendBCmd( tm, ts.Point, 7 );
+4510c5123
+<                                                                                                 tc1.MTarget := 0;
+---
+> 																																																tc1.MTarget := 0;
+4566c5179
+< 						                                WFIFOL( 4, tc.Weight);
+---
+> 																						WFIFOL( 4, tc.Weight);
+4622c5235
+<                                                         for i := 1 to 100 do begin
+---
+> 																												for i := 1 to 100 do begin
+4648c5261
+<                                                                 if tpe.Fullness < 26  then tpe.Relation := tpe.Relation + tpe.Data.Hungry
+---
+> 																																if tpe.Fullness < 26  then tpe.Relation := tpe.Relation + tpe.Data.Hungry
+4650c5263
+<                                                                 else tpe.Relation := tpe.Relation + ( tpe.Data.Hungry div 2 );
+---
+> 																																else tpe.Relation := tpe.Relation + ( tpe.Data.Hungry div 2 );
+4678c5291
+<                                                 2: // パフォーマンス
+---
+> 																								2: // パフォーマンス
+4706c5319
+<                                                                         j := tm.Block[tn.Point.X div 8][tn.Point.Y div 8].NPC.IndexOf(tn.ID);
+---
+> 																																				j := tm.Block[tn.Point.X div 8][tn.Point.Y div 8].NPC.IndexOf(tn.ID);
+4734c5347
+<                                                                                 j := SearchCInventory(tc, td.ID, td.IEquip );
+---
+> 																																								j := SearchCInventory(tc, td.ID, td.IEquip );
+4762c5375
+<                                                                                         WFIFOB(22, 1);
+---
+> 																																												WFIFOB(22, 1);
+4818c5431
+< 				        WFIFOW( 4, tc.Item[tc.UseItemID].Amount);
+---
+> 								WFIFOW( 4, tc.Item[tc.UseItemID].Amount);
+4846c5459
+<                                                         break;
+---
+> 																												break;
+4874c5487
+<                                                         tpe.Renamed := 0;
+---
+> 																												tpe.Renamed := 0;
+4902c5515
+<                                                 tpe.Data := tpd;
+---
+> 																								tpe.Data := tpd;
+4930c5543
+<                                                 WFIFOW( 0, $01a2 );
+---
+> 																								WFIFOW( 0, $01a2 );
+4932c5545
+<                                                 WFIFOB( 26, tpe.Renamed );
+---
+> 																								WFIFOB( 26, tpe.Renamed );
+4935c5548
+<                                                 WFIFOW( 31, tpe.Relation );
+---
+> 																								WFIFOW( 31, tpe.Relation );
+diff U0x009+arena3/login.pas Test86_guild/login.pas
+68,70c68,70
+<                                                DebugOut.Lines.Add('2重ログインされました。');
+<                                       end;
+<                                       inc(count);
+---
+> 																							 DebugOut.Lines.Add('2重ログインされました。');
+> 																			end;
+> 																			inc(count);
+81c81
+<               DebugOut.Lines.Add('tp.ver2 = '+inttostr(w));
+---
+> 							DebugOut.Lines.Add('tp.ver2 = '+inttostr(w));
+168c168
+<             while not SeekEof(addtxt) do
+---
+> 						while not SeekEof(addtxt) do
+181c181
+<             CloseFile(addtxt);
+---
+> 						CloseFile(addtxt);
+186c186
+<             CharaName.Clear;
+---
+> 						CharaName.Clear;
+188a189,202
+> {枝＋箱追加}
+> 						SummonMobList.Free;
+> 						SummonIOBList.Free;
+> 						SummonIOVList.Free;
+> 						SummonICAList.Free;
+> 						SummonIGBList.Free;
+> {枝＋箱追加ココまで}
+> {NPCイベント追加}
+> 						ServerFlag.Free;
+> 						MapInfo.Free;
+> {NPCイベント追加ココまで}
+> {ギルド機能追加}
+> 						GuildList.Clear;
+> {ギルド機能追加ココまで}
+193c207
+<             sv1PacketProcessSub(Socket,w,userid,userpass);
+---
+> 						sv1PacketProcessSub(Socket,w,userid,userpass);
+diff U0x009+arena3/main.pas Test86_guild/main.pas
+181a182,185
+> {ギルド機能追加}
+> 	GuildList := TIntList32.Create;
+> 	GSkillDB := TIntList32.Create;
+> {ギルド機能追加ココまで}
+456,458c460,462
+<         PetDB.Free;
+<         PetList.Free;
+< {キューペットここまで}  
+---
+> 				PetDB.Free;
+> 				PetList.Free;
+> {キューペットここまで}
+475a480,483
+> {ギルド機能追加}
+> 	GuildList.Free;
+> 	GSkillDB.Free;
+> {ギルド機能追加ココまで}
+747a756,759
+> {ギルド機能追加}
+> 	tg  :TGuild;
+> 	ge  :cardinal;
+> {ギルド機能追加ココまで}
+902a915,927
+> {ギルド機能追加}
+> 		j := GuildList.IndexOf(tc.GuildID);
+> 		if (j <> -1) then begin
+> 			tg := GuildList.Objects[j] as TGuild;
+> 			ge := l * tg.PosEXP[tc1.GuildPos] div 100;
+> 			if (ge > l) then ge := l;
+> 			if (ge > 0) then begin
+> 				l := l - ge;
+> 				CalcGuildLvUP(tg, tc1, ge);
+> 			end;
+> 		end;
+> {ギルド機能追加ココまで}
+> 
+1034a1060
+> 		tm.Mob.Delete(i);
+1048d1073
+< 		tm.Mob.Delete(i);
+diff U0x009+arena3/script.pas Test86_guild/script.pas
+547a548
+> 					CalcStat(tc);
+947,956c948,960
+< 					ts.Map := tn.Script[tc.ScriptStep].Data1[0];
+< 					ts.Point.X := StrToInt(tn.Script[tc.ScriptStep].Data1[1]);
+< 					ts.Point.Y := StrToInt(tn.Script[tc.ScriptStep].Data1[2]);
+< 					ts.Name := tn.Script[tc.ScriptStep].Data1[3];
+< 					ts.JID := StrToInt(tn.Script[tc.ScriptStep].Data1[4]);
+< 					ts.Data := MobDB.IndexOfObject(ts.JID) as TMobDB;
+< 					ts.ID := NowMobID;
+< 					Inc(NowMobID);
+< 					//イベント設定
+< 					ts.Event := StrToInt(tn.Script[tc.ScriptStep].Data1[6]);
+---
+> 					with ts do begin
+> 						Map := tn.Script[tc.ScriptStep].Data1[0];
+> 						Point.X := tn.Script[tc.ScriptStep].Data3[0];
+> 						Point.Y := tn.Script[tc.ScriptStep].Data3[1];
+> 						if (Point.X = 0) and (Point.Y = 0) then begin
+> 							j := 0;
+> 							repeat
+> 								Point.X := Random(tm.Size.X - 2) + 1;
+> 								Point.Y := Random(tm.Size.Y - 2) + 1;
+> 								Inc(j);
+> 							until (tm.gat[Point.X, Point.Y] and 1 <> 0) or (j = 100);
+> 						end;
+> 						if (j = 100) then continue;
+958,964c962,969
+< 					ts.Dir := Random(8);
+< 					ts.HP := ts.Data.HP;
+< 					ts.Speed := ts.Data.Speed;
+< 					ts.SpawnDelay1 := $7FFFFFFF;
+< 					ts.SpawnDelay2 := 0;
+< 					ts.SpawnType := 0;
+< 					ts.SpawnTick := 0;
+---
+> 						Name := tn.Script[tc.ScriptStep].Data1[1];
+> 						JID := tn.Script[tc.ScriptStep].Data3[2];
+> 						Data := MobDB.IndexOfObject(ts.JID) as TMobDB;
+> 						ID := NowMobID;
+> 						Inc(NowMobID);
+> 						//イベント設定
+> 						if (tn.Script[tc.ScriptStep].Data2[0] = '') then Event := 0
+> 						else Event := StrToInt(tn.Script[tc.ScriptStep].Data2[0]);
+966,978c971,977
+< 					ts.isLooting := False;
+< 					for j:= 1 to 10 do begin
+< 						ts.Item[j].ID := 0;
+< 						ts.Item[j].Amount := 0;
+< 						ts.Item[j].Equip := 0;
+< 						ts.Item[j].Identify := 0;
+< 						ts.Item[j].Refine := 0;
+< 						ts.Item[j].Attr := 0;
+< 						ts.Item[j].Card[0] := 0;
+< 						ts.Item[j].Card[1] := 0;
+< 						ts.Item[j].Card[2] := 0;
+< 						ts.Item[j].Card[3] := 0;
+< 					end;
+---
+> 						Dir := Random(8);
+> 						HP := Data.HP;
+> 						Speed := Data.Speed;
+> 						SpawnDelay1 := $7FFFFFFF;
+> 						SpawnDelay2 := 0;
+> 						SpawnType := 0;
+> 						SpawnTick := 0;
+980,994c979,1007
+< 					if (tn.Script[tc.ScriptStep].Data1[5] = '0') then begin
+< 						if ts.Data.isDontMove then
+< 							ts.MoveWait := 4294967295
+< 						else
+< 							ts.MoveWait := Tick + 5000 + Cardinal(Random(10000));
+< 						ts.isActive := ts.Data.isActive;
+< 					end else begin
+< 						ts.MoveWait := timeGetTime();
+< 						ts.isActive := true;
+< 					end;
+< 					ts.ATarget := 0;
+< 					ts.ATKPer := 100;
+< 					ts.DEFPer := 100;
+< 					ts.DmgTick := 0;
+< 					ts.Element := ts.Data.Element;
+---
+> 						isLooting := False;
+> 						for j:= 1 to 10 do begin
+> 							Item[j].ID := 0;
+> 							Item[j].Amount := 0;
+> 							Item[j].Equip := 0;
+> 							Item[j].Identify := 0;
+> 							Item[j].Refine := 0;
+> 							Item[j].Attr := 0;
+> 							Item[j].Card[0] := 0;
+> 							Item[j].Card[1] := 0;
+> 							Item[j].Card[2] := 0;
+> 							Item[j].Card[3] := 0;
+> 						end;
+> 
+> 						if (tn.Script[tc.ScriptStep].Data3[3] = 0) then begin
+> 							if Data.isDontMove then
+> 								MoveWait := 4294967295
+> 							else
+> 								MoveWait := Tick + 5000 + Cardinal(Random(10000));
+> 							isActive := ts.Data.isActive;
+> 						end else begin
+> 							MoveWait := timeGetTime();
+> 							isActive := true;
+> 						end;
+> 						ATarget := 0;
+> 						ATKPer := 100;
+> 						DEFPer := 100;
+> 						DmgTick := 0;
+> 						Element := Data.Element;
+996,1000d1008
+< 					for j := 0 to 31 do begin
+< 						ts.EXPDist[j].CData := nil;
+< 						ts.EXPDist[j].Dmg := 0;
+< 					end;
+< 					if ts.Data.MEXP <> 0 then begin
+1002,1003c1010,1011
+< 							ts.MVPDist[j].CData := nil;
+< 							ts.MVPDist[j].Dmg := 0;
+---
+> 							EXPDist[j].CData := nil;
+> 							EXPDist[j].Dmg := 0;
+1005,1007c1013,1020
+< 						ts.MVPDist[0].Dmg := ts.Data.HP * 30 div 100; //FAに30%加算
+< 					end;
+< 					ts.isSummon := True;
+---
+> 						if Data.MEXP <> 0 then begin
+> 							for j := 0 to 31 do begin
+> 								MVPDist[j].CData := nil;
+> 								MVPDist[j].Dmg := 0;
+> 							end;
+> 							MVPDist[0].Dmg := Data.HP * 30 div 100; //FAに30%加算
+> 						end;
+> 						isSummon := True;
+1009,1010c1022,1023
+< 					tm.Mob.AddObject(ts.ID, ts);
+< 					tm.Block[ts.Point.X div 8][ts.Point.Y div 8].Mob.AddObject(ts.ID, ts);
+---
+> 						tm.Mob.AddObject(ID, ts);
+> 						tm.Block[Point.X div 8][Point.Y div 8].Mob.AddObject(ID, ts);
+1012,1022c1025,1036
+< 					//周囲に送信
+< 					ZeroMemory(@buf[0], 41);
+< 					WFIFOW( 0, $007c);
+< 					WFIFOL( 2, ts.ID);
+< 					WFIFOW( 6, ts.Speed);
+< 					WFIFOW( 8, ts.Stat1);
+< 					WFIFOW(10, ts.Stat2);
+< 					WFIFOW(20, ts.JID);
+< 					WFIFOM1(36, ts.Point, ts.Dir);
+< 					SendBCmd(tm,ts.Point,41,nil,true);
+< 					Inc(tc.ScriptStep);
+---
+> 						//周囲に送信
+> 						ZeroMemory(@buf[0], 41);
+> 						WFIFOW( 0, $007c);
+> 						WFIFOL( 2, ID);
+> 						WFIFOW( 6, Speed);
+> 						WFIFOW( 8, Stat1);
+> 						WFIFOW(10, Stat2);
+> 						WFIFOW(20, JID);
+> 						WFIFOM1(36, Point, Dir);
+> 						SendBCmd(tm,Point,41,nil,true);
+> 						Inc(tc.ScriptStep);
+> 					end;

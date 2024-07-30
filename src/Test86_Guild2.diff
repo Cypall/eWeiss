@@ -1,0 +1,94 @@
+diff Test86_guild/common.pas Test86_guild2/common.pas 
+3904,3905c3904 
+<                     if (GSkill[i].Lv < GSkill[i].Data.MasterLV) and (GSkillPoint > 0) then k := 1 else k := 0; 
+<                     WFIFOB(42 + 37 * j, k); 
+--- 
+>                     WFIFOB(42 + 37 * j, 1); 
+4105,4106c4104,4108 
+<     l := embfs.Size; 
+<     if (l = 0) then begin 
+--- 
+>     try 
+>         l := embfs.Size; 
+>         GetMem(embdt, l); 
+>         embfs.Read(embdt^, l); 
+>     finally 
+4108,4109d4109 
+<         Result := 0; 
+<         exit; 
+4111,4121c4111,4123 
+<     GetMem(embdt, l); 
+<     embfs.Read(embdt^, l); 
+<     embfs.Free; 
+<     embpt := embdt; 
+<     WFIFOW( 0, $0152); 
+<     WFIFOW( 2, l + 12); 
+<     WFIFOL( 4, tg.ID); 
+<     WFIFOL( 8, tg.Emblem); 
+<     for i := 0 to l - 1 do begin 
+<         WFIFOB(i + 12, embpt^); 
+<         Inc(embpt); 
+--- 
+>     if (l = 0) then begin 
+>         Result := 0; 
+>     end else begin 
+>         embpt := embdt; 
+>         WFIFOW( 0, $0152); 
+>         WFIFOW( 2, l + 12); 
+>         WFIFOL( 4, tg.ID); 
+>         WFIFOL( 8, tg.Emblem); 
+>         for i := 0 to l - 1 do begin 
+>             WFIFOB(i + 12, embpt^); 
+>             Inc(embpt); 
+>         end; 
+>         Result := l + 12; 
+4124d4125 
+<     Result := l + 12; 
+4145,4146c4146,4150 
+<     embfs.Write(embdt^, size); 
+<     embfs.Free; 
+--- 
+>     try 
+>         embfs.Write(embdt^, size); 
+>     finally 
+>         embfs.Free; 
+>     end; 
+diff Test86_guild/game.pas Test86_guild2/game.pas 
+4251a4252,4258 
+>                         //?????????? 
+>                         for k := 0 to 35 do begin 
+>                             tc1 := tg.Member[k]; 
+>                             if (tc1 <> nil) then begin 
+>                                 if (tc1.GuildPos = l) then tc1.ClassName := tg.PosName[l]; 
+>                             end; 
+>                         end; 
+4361d4367 
+<                 if (tc.GuildInv <> 0) then continue;//?????(???????) 
+4364a4371 
+>                 if (tc1.GuildInv <> 0) then continue;//?????? 
+4371c4378 
+<                         tc.GuildInv := tc1.CID; 
+--- 
+>                         tc1.GuildInv := tc.CID; 
+4395,4403c4402,4406 
+<                 tc1 := nil; 
+<                 for i := 0 to 35 do begin 
+<                     if (tg.Member[i].GuildInv = tc.CID) then begin 
+<                         tc1 := tg.Member[i]; 
+<                         break; 
+<                     end; 
+<                 end; 
+<                 tg.Member[tc1.GuildPos].GuildInv := 0; 
+<                 if (tc1 = nil) or (l2 > 1) then continue; 
+--- 
+>                 tc1 := Chara.IndexOfObject(tc.GuildInv) as TChara; 
+>                 tc.GuildInv := 0; 
+>                 if tc1 = nil then Continue; 
+>                 if (tg.Name <> tc1.GuildName) then continue; 
+> 
+4423a4427,4428 
+>                             SendGuildInfo(tc1, 0, true); 
+>                             SendGuildInfo(tc1, 1, true); 
+diff Test86_guild/main.pas Test86_guild2/main.pas 
+2926d2925 
+<                         WFIFOW(10, 0);// 

@@ -1,0 +1,708 @@
+diff U0x009/Game.pas U0x009+arena3/game.pas
+90a91,93
+> {NPCイベント追加}
+> 	mi  :MapTbl;
+> {NPCイベント追加ココまで}
+200a204,214
+> {露店スキル追加}
+> 				tc.VenderID := 0;
+> {露店スキル追加ココまで}
+> {チャットルーム機能追加}
+> 				tc.ChatRoomID := 0;
+> {チャットルーム機能追加ココまで}
+> {取引機能追加}
+> 				tc.DealingID := 0;
+> 				tc.PreDealID := 0;
+> {取引機能追加ココまで}
+> 
+208c222,260
+< {修正}					SendNData(Socket, tn,tc.ver2);
+---
+> {NPCイベント追加}
+> 								if (tn.Enable = true) then begin
+> 									SendNData(Socket, tn,tc.ver2);
+> 									if (tn.ScriptInitS <> -1) and (tn.ScriptInitD = false) then begin
+> 										//OnInitラベルを実行
+> 										DebugOut.Lines.Add(Format('OnInit Event(%d)', [tn.ID]));
+> 										tc1 := TChara.Create;
+> 										tc1.TalkNPCID := tn.ID;
+> 										tc1.ScriptStep := tn.ScriptInitS;
+> 										tc1.AMode := 3;
+> 										tc1.AData := tn;
+> 										tc1.Login := 0;
+> 										NPCScript(tc1,0,1);
+> 										tn.ScriptInitD := true;
+> 										tc1.Free;
+> 									end;
+> 									if (tn.ChatRoomID <> 0) then begin
+> 										//チャットルームを表示する
+> 										ii := ChatRoomList.IndexOf(tn.ChatRoomID);
+> 										if (ii <> -1) then begin
+> 											tcr := ChatRoomList.Objects[ii] as TChatRoom;
+> 											if (tn.ID = tcr.MemberID[0]) then begin
+> 												w := Length(tcr.Title);
+> 												WFIFOW(0, $00d7);
+> 												WFIFOW(2, w + 17);
+> 												WFIFOL(4, tcr.MemberID[0]);
+> 												WFIFOL(8, tcr.ID);
+> 												WFIFOW(12, tcr.Limit);
+> 												WFIFOW(14, tcr.Users);
+> 												WFIFOB(16, tcr.Pub);
+> 												WFIFOS(17, tcr.Title, w);
+> 												if tc.Socket <> nil then begin
+> 													tc.Socket.SendBuf(buf, w + 17);
+> 												end;
+> 											end;
+> 										end;
+> 									end;
+> 								end;
+> {NPCイベント追加ココまで}
+211,218d262
+< {チャットルーム機能追加}
+< 								//周辺のチャットルームを表示
+< 								ChatRoomDisp(tc.Socket, tc);
+< {チャットルーム機能追加ココまで}
+< {露店スキル追加}
+< 								//周辺の露店を表示
+< 								VenderDisp(tc.Socket, tc);
+< {露店スキル追加ココまで}
+224a269,276
+> {チャットルーム機能追加}
+> 								//周辺のチャットルームを表示
+> 								ChatRoomDisp(tc.Socket, tc1);
+> {チャットルーム機能追加ココまで}
+> {露店スキル追加}
+> 								//周辺の露店を表示
+> 								VenderDisp(tc.Socket, tc1);
+> {露店スキル追加ココまで}
+1105a1158,1166
+> {NPCイベント追加}
+> 									i := MapInfo.IndexOf(tc.Map);
+> 									j := -1;
+> 									if (i <> -1) then begin
+> 										mi := MapInfo.Objects[i] as MapTbl;
+> 										if (mi.noTele = true) then j := 0;
+> 									end;
+> 									if (j <> 0) then begin
+> {NPCイベント追加ココまで}
+1138a1200,1202
+> {NPCイベント追加}
+> 									end;
+> {NPCイベント追加ココまで}
+1141a1206,1214
+> {NPCイベント追加}
+> 									i := MapInfo.IndexOf(tc.Map);
+> 									j := -1;
+> 									if (i <> -1) then begin
+> 										mi := MapInfo.Objects[i] as MapTbl;
+> 										if (mi.noTele = true) then j := 0;
+> 									end;
+> 									if (j <> 0) then begin
+> {NPCイベント追加ココまで}
+1165a1239,1241
+> {NPCイベント追加}
+> 									end;
+> {NPCイベント追加ココまで}
+2014a2091,2113
+> {NPCイベント追加}
+> 					if (tcr.NPCowner <> 0) and (tcr.Limit = tcr.Users) then begin
+> 						tc1 := TChara.Create;
+> 						tm := tc.MData;
+> 						tn := tm.NPC.IndexOfObject(tcr.MemberID[0]) as TNPC;
+> 						tc1.TalkNPCID := tn.ID;
+> 						for j := 0 to tn.ScriptCnt - 1 do begin
+> 							k := -1;
+> 							if (tn.Script[j].ID = 39) then begin
+> 								k := tn.Script[j].Data3[1];
+> 								break;
+> 							end;
+> 						end;
+> 						if (k <> -1) then begin
+> 							tc1.ScriptStep := k;
+> 							tc1.AMode := 3;
+> 							tc1.AData := tn;
+> 							tc1.Login := 0;
+> 							NPCScript(tc1,0,1);
+> 						end;
+> 						tc1.Free;
+> 					end;
+> {NPCイベント追加ココまで}
+2987a3087,3094
+> {チャットルーム機能追加}
+> 				//入室中のスキル使用無効
+> 				if (tc.ChatRoomID <> 0) then continue;
+> {チャットルーム機能追加ココまで}
+> {露店スキル追加}
+> 				//露店中のスキル使用無効
+> 				if (tc.VenderID <> 0) then continue;
+> {露店スキル追加ココまで}
+2995a3103,3111
+> {NPCイベント追加}
+> 				i := MapInfo.IndexOf(tc.Map);
+> 				j := -1;
+> 				if (i <> -1) then begin
+> 					mi := MapInfo.Objects[i] as MapTbl;
+> 					if (mi.noTele = true) then j := 0;
+> 				end;
+> 				if (tc.MSkill = 26) and (j = 0) then continue;
+> {NPCイベント追加ココまで}
+3010a3127,3134
+> {チャットルーム機能追加}
+> 				//入室中のスキル使用無効
+> 				if (tc.ChatRoomID <> 0) then continue;
+> {チャットルーム機能追加ココまで}
+> {露店スキル追加}
+> 				//露店中のスキル使用無効
+> 				if (tc.VenderID <> 0) then continue;
+> {露店スキル追加ココまで}
+3018a3143,3151
+> {NPCイベント追加}
+> 				i := MapInfo.IndexOf(tc.Map);
+> 				j := -1;
+> 				if (i <> -1) then begin
+> 					mi := MapInfo.Objects[i] as MapTbl;
+> 					if (mi.noTele = true) then j := 0;
+> 				end;
+> 				if (tc.MSkill = 27) and (j = 0) then continue;
+> {NPCイベント追加ココまで}
+3048,3050d3180
+< {露店スキル追加}
+< 				if(tc.VenderID <> 0) then continue;
+< {露店スキル追加ココまで}
+3128,3130d3257
+< {露店スキル追加}
+< 				if(tc.VenderID <> 0) then continue;
+< {露店スキル追加ココまで}
+3147a3275,3288
+> {NPCイベント追加}
+> 				i := MapInfo.IndexOf(tc.Map);
+> 				j := -1;
+> 				if (i <> -1) then begin
+> 					mi := MapInfo.Objects[i] as MapTbl;
+> 					if (mi.noMemo = true) then j := 0;
+> 				end;
+> 				if (j = 0) then begin //メモ不可能
+> 					WFIFOW(0, $0189);
+> 					WFIFOW(2, 1);
+> 					Socket.SendBuf(buf, 4);
+> 					continue;
+> 				end;
+> {NPCイベント追加ココまで}
+3204a3346,3348
+> {露店スキル追加}
+> 				if(tc.VenderID <> 0) then continue;
+> {露店スキル追加ココまで}
+3222,3224d3365
+< {露店スキル追加}
+< 				if(tc.VenderID <> 0) then continue;
+< {露店スキル追加ココまで}
+3284a3426,3428
+> {露店スキル追加}
+> 				if(tc.VenderID <> 0) then continue;
+> {露店スキル追加ココまで}
+3291,3293d3434
+< {露店スキル追加}
+< 				if(tc.VenderID <> 0) then continue;
+< {露店スキル追加ココまで}
+3375a3517,3652
+> {カート機能追加}
+> 		$0128: //倉庫からカートへアイテム移動
+> 			begin
+> 				tp := tc.PData;
+> 
+> 				RFIFOW(2, w1);//倉庫内での対象アイテムID
+> 				RFIFOL(4, l);//移動させる個数
+> 
+> 				if tp.Kafra.Item[w1].ID = 0 then Continue;
+> 				if tp.Kafra.Item[w1].Amount < l then
+> 					l := tp.Kafra.Item[w1].Amount;
+> 				j := SearchInventory(tc.Cart, tp.Kafra.Item[w1].ID, tp.Kafra.Item[w1].Data.IEquip);
+> 
+> 				//tp.Kafra.Weight := 80000;
+> 				k := MoveItem(tc.Cart,tp.Kafra,w1,l);
+> 				if k = -1 then Continue;
+> 				if k = 2 then begin
+> 					//重量オーバーのパケットを送り、処理から抜ける
+> 					WFIFOW(0, $012c);
+> 					WFIFOB(2, 0);
+> 					Socket.SendBuf(buf, 3);
+> 					continue;
+> 				end else if k = 3 then begin
+> 					WFIFOW(0, $00ca);
+> 					WFIFOB(2, 3);	//1=お金が足りない 2=重量オーバー 3=アイテム最大種類数オーバー
+> 					Socket.SendBuf(buf, 3);
+> 					continue;
+> 				end;
+> 
+> 			//倉庫内の対象アイテムの個数変更
+> 				WFIFOW( 0, $00f6);
+> 				WFIFOW( 2, w1);
+> 				WFIFOL( 4, l);
+> 				Socket.SendBuf(buf, 8);
+> 
+> 				//倉庫アイテム数変更
+> 				WFIFOW(0, $00f2);
+> 				WFIFOW(2, tp.Kafra.Count);
+> 				WFIFOW(4, 100);
+> 				tc.Socket.SendBuf(buf, 6);
+> 
+> 				//カートに追加されたアイテムの表示
+> 				WFIFOW( 0, $0124);
+> 				WFIFOW( 2, j);
+> 				WFIFOL( 4, l);
+> 				WFIFOW( 8, tc.Cart.item[j].ID);
+> 				WFIFOB(10, tc.Cart.item[j].Identify);
+> 				WFIFOB(11, tc.Cart.item[j].Attr);
+> 				WFIFOB(12, tc.Cart.item[j].Refine);
+> 				WFIFOW(13, tc.Cart.item[j].Card[0]);
+> 				WFIFOW(15, tc.Cart.item[j].Card[1]);
+> 				WFIFOW(17, tc.Cart.item[j].Card[2]);
+> 				WFIFOW(19, tc.Cart.item[j].Card[3]);
+> 				Socket.SendBuf(buf, 21);
+> 
+> 				//カート重量、容量データの送信
+> 				WFIFOW(0, $0121);
+> 				WFIFOW(2, tc.Cart.Count);
+> 				WFIFOW(4, 100);
+> 				WFIFOL(6, tc.Cart.Weight);
+> 				WFIFOL(10, tc.Cart.MaxWeight);
+> 				Socket.SendBuf(buf, 14);
+> 
+> 			end;
+> {カート機能追加ココまで}
+> 		//--------------------------------------------------------------------------
+> {カート機能追加}
+> 		$0129: //カートから倉庫へアイテム移動
+> 			begin
+> 				tp := tc.PData;
+> 
+> 				RFIFOW(2, w1);//カート内での対象アイテムID
+> 				RFIFOL(4, l);//移動させる個数
+> 
+> 				if tc.Cart.Item[w1].ID = 0 then Continue;
+> 				if tc.Cart.Item[w1].Amount < l then
+> 					l := tc.Cart.Item[w1].Amount;
+> 				j := SearchInventory(tp.Kafra, tc.Cart.Item[w1].ID, tc.Cart.Item[w1].Data.IEquip);
+> 
+> 				k := MoveItem(tp.Kafra,tc.Cart,w1,l);
+> 				if k = -1 then Continue
+> 				else if k = 3 then begin
+> 					WFIFOW(0, $00ca);
+> 					WFIFOB(2, 3);	//1=お金が足りない 2=重量オーバー 3=アイテム最大種類数オーバー
+> 					Socket.SendBuf(buf, 3);
+> 					continue;
+> 				end;
+> 
+> 				//カート内の対象アイテムの所持数表示変更
+> 				WFIFOW( 0, $0125);
+> 				WFIFOW( 2, w1);
+> 				WFIFOL( 4, l);
+> 				Socket.SendBuf(buf, 8);
+> 
+> 				//カート重量、容量データの送信
+> 				WFIFOW(0, $0121);
+> 				WFIFOW(2, tc.Cart.Count);
+> 				WFIFOW(4, 100);
+> 				WFIFOL(6, tc.Cart.Weight);
+> 				WFIFOL(10, tc.Cart.MaxWeight);
+> 				Socket.SendBuf(buf, 14);
+> 
+> 				//倉庫追加アイテムの表示
+> 				WFIFOW( 0, $00f4);
+> 				WFIFOW( 2, j);
+> 				WFIFOL( 4, l);
+> 				WFIFOW( 8, tp.Kafra.Item[j].ID);
+> 				WFIFOB(10, tp.Kafra.Item[j].Identify);
+> 				WFIFOB(11, tp.Kafra.Item[j].Attr);
+> 				WFIFOB(12, tp.Kafra.Item[j].Refine);
+> 				WFIFOW(13, tp.Kafra.Item[j].Card[0]);
+> 				WFIFOW(15, tp.Kafra.Item[j].Card[1]);
+> 				WFIFOW(17, tp.Kafra.Item[j].Card[2]);
+> 				WFIFOW(19, tp.Kafra.Item[j].Card[3]);
+> 				Socket.SendBuf(buf, 21);
+> 
+> 				//倉庫アイテム数変更
+> 				WFIFOW(0, $00f2);
+> 				WFIFOW(2, tp.Kafra.Count);
+> 				WFIFOW(4, 100);
+> 				tc.Socket.SendBuf(buf, 6);
+> 			end;
+> {カート機能追加ココまで}
+> 		//--------------------------------------------------------------------------
+> 		$012a: //鷹、ペコペコ、カートを外す
+> 			begin
+> 				tc.Option := tc.Option and $F847;
+> 				WFIFOW( 0, $0119);
+> 				WFIFOL( 2, tc.ID);
+> 				WFIFOW( 6, 0);
+> 				WFIFOW( 8, 0);
+> 				WFIFOW(10, tc.Option);
+> 				WFIFOB(12, 0);
+> 				SendBCmd(tc.MData, tc.Point, 13);
+> 			end;
+> 		//--------------------------------------------------------------------------
+3565a3843,3846
+> {あぷろだ１:038}
+> 		$013f: //GMコマンド /item /monster
+> 		//monsterコマンドもitemコマンドもパケットは同一なので
+> 		//itemの処理→monsterの処理とやることにする
+3567,3568d3847
+< {カート機能追加}
+< 		$0128: //倉庫からカートへアイテム移動
+3570c3849,3858
+< 				tp := tc.PData;
+---
+>                            {GMかチェック}
+>                            tp := tc.PData;
+>                            if ((tp.GMMode = 1) or ((GMCheck and $02) <> 0))then
+>                            {GMかチェック_end}
+>                            begin
+> 				str := RFIFOS(2, 24);
+> 				tm := tc.MData;
+> 				//アイテム取得
+> 				//入力された文字列がモンスターを示してない場合にアイテム処理にはいる
+> 				if (MobDBName.IndexOf(str) = -1) then begin
+3572,3573c3860
+< 				RFIFOW(2, w1);//倉庫内での対象アイテムID
+< 				RFIFOL(4, l);//移動させる個数
+---
+> 					if ItemDBName.IndexOf(str) = -1 then continue;//アイテムの名前でなかったら処理から抜ける
+3575,3722c3862
+< 				if tp.Kafra.Item[w1].ID = 0 then Continue;
+< 				if tp.Kafra.Item[w1].Amount < l then
+< 					l := tp.Kafra.Item[w1].Amount;
+< 				j := SearchInventory(tc.Cart, tp.Kafra.Item[w1].ID, tp.Kafra.Item[w1].Data.IEquip);
+< 
+< 				//tp.Kafra.Weight := 80000;
+< 				k := MoveItem(tc.Cart,tp.Kafra,w1,l);
+< 				if k = -1 then Continue;
+< 				if k = 2 then begin
+< 					//重量オーバーのパケットを送り、処理から抜ける
+< 					WFIFOW(0, $012c);
+< 					WFIFOB(2, 0);
+< 					Socket.SendBuf(buf, 3);
+< 					continue;
+< 				end else if k = 3 then begin
+< 					WFIFOW(0, $00ca);
+< 					WFIFOB(2, 3);	//1=お金が足りない 2=重量オーバー 3=アイテム最大種類数オーバー
+< 					Socket.SendBuf(buf, 3);
+< 					continue;
+< 				end;
+< 
+< 			//倉庫内の対象アイテムの個数変更
+< 				WFIFOW( 0, $00f6);
+< 				WFIFOW( 2, w1);
+< 				WFIFOL( 4, l);
+< 				Socket.SendBuf(buf, 8);
+< 
+< 				//倉庫アイテム数変更
+< 				WFIFOW(0, $00f2);
+< 				WFIFOW(2, tp.Kafra.Count);
+< 				WFIFOW(4, 100);
+< 				tc.Socket.SendBuf(buf, 6);
+< 
+< 				//カートに追加されたアイテムの表示
+< 				WFIFOW( 0, $0124);
+< 				WFIFOW( 2, j);
+< 				WFIFOL( 4, l);
+< 				WFIFOW( 8, tc.Cart.item[j].ID);
+< 				WFIFOB(10, tc.Cart.item[j].Identify);
+< 				WFIFOB(11, tc.Cart.item[j].Attr);
+< 				WFIFOB(12, tc.Cart.item[j].Refine);
+< 				WFIFOW(13, tc.Cart.item[j].Card[0]);
+< 				WFIFOW(15, tc.Cart.item[j].Card[1]);
+< 				WFIFOW(17, tc.Cart.item[j].Card[2]);
+< 				WFIFOW(19, tc.Cart.item[j].Card[3]);
+< 				Socket.SendBuf(buf, 21);
+< 
+< 				//カート重量、容量データの送信
+< 				WFIFOW(0, $0121);
+< 				WFIFOW(2, tc.Cart.Count);
+< 				WFIFOW(4, 100);
+< 				WFIFOL(6, tc.Cart.Weight);
+< 				WFIFOL(10, tc.Cart.MaxWeight);
+< 				Socket.SendBuf(buf, 14);
+< 
+< 			end;
+< {カート機能追加ココまで}
+< 		//--------------------------------------------------------------------------
+< {カート機能追加}
+< 		$0129: //カートから倉庫へアイテム移動
+< 			begin
+< 				tp := tc.PData;
+< 
+< 				RFIFOW(2, w1);//カート内での対象アイテムID
+< 				RFIFOL(4, l);//移動させる個数
+< 
+< 				if tc.Cart.Item[w1].ID = 0 then Continue;
+< 				if tc.Cart.Item[w1].Amount < l then
+< 					l := tc.Cart.Item[w1].Amount;
+< 				j := SearchInventory(tp.Kafra, tc.Cart.Item[w1].ID, tc.Cart.Item[w1].Data.IEquip);
+< 
+< 				k := MoveItem(tp.Kafra,tc.Cart,w1,l);
+< 				if k = -1 then Continue
+< 				else if k = 3 then begin
+< 					WFIFOW(0, $00ca);
+< 					WFIFOB(2, 3);	//1=お金が足りない 2=重量オーバー 3=アイテム最大種類数オーバー
+< 					Socket.SendBuf(buf, 3);
+< 					continue;
+< 				end;
+< 
+< 				//カート内の対象アイテムの所持数表示変更
+< 				WFIFOW( 0, $0125);
+< 				WFIFOW( 2, w1);
+< 				WFIFOL( 4, l);
+< 				Socket.SendBuf(buf, 8);
+< 
+< 				//カート重量、容量データの送信
+< 				WFIFOW(0, $0121);
+< 				WFIFOW(2, tc.Cart.Count);
+< 				WFIFOW(4, 100);
+< 				WFIFOL(6, tc.Cart.Weight);
+< 				WFIFOL(10, tc.Cart.MaxWeight);
+< 				Socket.SendBuf(buf, 14);
+< 
+< 				//倉庫追加アイテムの表示
+< 				WFIFOW( 0, $00f4);
+< 				WFIFOW( 2, j);
+< 				WFIFOL( 4, l);
+< 				WFIFOW( 8, tp.Kafra.Item[j].ID);
+< 				WFIFOB(10, tp.Kafra.Item[j].Identify);
+< 				WFIFOB(11, tp.Kafra.Item[j].Attr);
+< 				WFIFOB(12, tp.Kafra.Item[j].Refine);
+< 				WFIFOW(13, tp.Kafra.Item[j].Card[0]);
+< 				WFIFOW(15, tp.Kafra.Item[j].Card[1]);
+< 				WFIFOW(17, tp.Kafra.Item[j].Card[2]);
+< 				WFIFOW(19, tp.Kafra.Item[j].Card[3]);
+< 				Socket.SendBuf(buf, 21);
+< 
+< 				//倉庫アイテム数変更
+< 				WFIFOW(0, $00f2);
+< 				WFIFOW(2, tp.Kafra.Count);
+< 				WFIFOW(4, 100);
+< 				tc.Socket.SendBuf(buf, 6);
+< 			end;
+< {カート機能追加ココまで}
+< 		//--------------------------------------------------------------------------
+< 		$012a: //鷹、ペコペコ、カートを外す
+< 			begin
+< 				tc.Option := tc.Option and $F847;
+< 				WFIFOW( 0, $0119);
+< 				WFIFOL( 2, tc.ID);
+< 				WFIFOW( 6, 0);
+< 				WFIFOW( 8, 0);
+< 				WFIFOW(10, tc.Option);
+< 				WFIFOB(12, 0);
+< 				SendBCmd(tc.MData, tc.Point, 13);
+< 			end;
+< 		//--------------------------------------------------------------------------
+< {あぷろだ１:038}
+< 		$013f: //GMコマンド /item /monster
+< 		//monsterコマンドもitemコマンドもパケットは同一なので
+< 		//itemの処理→monsterの処理とやることにする
+< 
+< 			begin
+<                            {GMかチェック}
+<                            tp := tc.PData;
+<                            if ((tp.GMMode = 1) or ((GMCheck and $02) <> 0))then
+<                            {GMかチェック_end}
+<                            begin
+< 				str := RFIFOS(2, 24);
+< 				tm := tc.MData;
+< 				//アイテム取得
+< 				//入力された文字列がモンスターを示してない場合にアイテム処理にはいる
+< 				if (MobDBName.IndexOf(str) = -1) then begin
+< 
+< 					if ItemDBName.IndexOf(str) = -1 then continue;//アイテムの名前でなかったら処理から抜ける
+< 
+< 					td := ItemDBName.Objects[ItemDBName.IndexOf(str)] as TItemDB;
+---
+> 					td := ItemDBName.Objects[ItemDBName.IndexOf(str)] as TItemDB;
+4003c4143
+< //--------------------------------------------------------------------------
+---
+> 		//--------------------------------------------------------------------------
+4206d4345
+< //--------------------------------------------------------------------------
+4208,4291d4346
+< {露店スキル追加}
+< 		$01b2: //露店開設
+< 			begin
+< 				//職業＆スキルチェック
+< 				if (tc.JID <> 5) and (tc.JID <> 10) and (tc.JID <> 18) then continue;
+< 				if (tc.Skill[41].Lv = 0) then continue;
+< 
+< 				//キャンセル判定
+< 				RFIFOB(84, b);//0=キャンセル,1=オープン
+< 				if (b = 0) then continue;
+< 				RFIFOW(2, w);
+< 				if (w - 85 < 8) then continue;
+< 				tv := TVender.Create;
+< 
+< 				//露店情報設定
+< 				tv.Title := RFIFOS(4, 80);//タイトル
+< 				for j := 0 to (w - 85) div 8 - 1 do begin
+< 					//IDチェック
+< 					RFIFOW(85+j*8, w1);
+< 					if (tc.Cart.Item[w1].ID = 0) then begin
+< 						exit;
+< 					end;
+< 					tv.Idx[j] := w1;
+< 					//数量チェック
+< 					RFIFOW(87+j*8, w2);
+< 					if (w2 > tc.Cart.Item[w1].Amount) then begin
+< 						w2 := tc.Cart.Item[w1].Amount;
+< 					end;
+< 					tv.Amount[j] := w2;
+< 					//価格チェック
+< 					RFIFOL(89+j*8, l);//Price
+< 					if (l > 10000000) then l := 10000000;//価格上限(10M)
+< 					tv.Price[j] := l;
+< 					//重量
+< 					td := tc.Cart.Item[w1].Data;
+< 					tv.Weight[j] := td.Weight;
+< 					tv.Cnt := tv.Cnt + 1;
+< 				end;
+< 
+< 				tv.ID := tc.ID;
+< 				tv.CID := tc.CID;
+< 				tc.VenderID := tv.ID;
+< 				tv.MaxCnt := tv.Cnt;
+< 				VenderList.AddObject(tv.ID, tv);
+< 
+< 				//カートからアイテム削除
+< 				for j := 0 to (w - 85) div 8 - 1 do begin
+< 					WFIFOW( 0, $0125);
+< 					WFIFOW( 2, tv.Idx[j]);
+< 					WFIFOL( 4, tv.Amount[j]);
+< 					Socket.SendBuf(buf, 8);
+< 				end;
+< 
+< 				//露店開始通知
+< 				w := 8 + tv.Cnt * 22;
+< 				WFIFOW( 0, $0136);
+< 				WFIFOW( 2, w);
+< 				WFIFOL( 4, tv.CID);
+< 				for j := 0 to tv.Cnt - 1 do begin
+< 					td := tc.Cart.Item[tv.Idx[j]].Data;
+< 					WFIFOL( 8+j*22, tv.Price[j]);
+< 					WFIFOW(12+j*22, tv.Idx[j]);
+< 					WFIFOW(14+j*22, tv.Amount[j]);
+< 					WFIFOB(16+j*22, td.IType);
+< 					WFIFOW(17+j*22, tc.Cart.Item[tv.Idx[j]].ID);
+< 					WFIFOB(19+j*22, tc.Cart.Item[tv.Idx[j]].Identify);
+< 					WFIFOB(20+j*22, tc.Cart.Item[tv.Idx[j]].Attr);
+< 					WFIFOB(21+j*22, tc.Cart.Item[tv.Idx[j]].Refine);
+< 					WFIFOW(22+j*22, tc.Cart.Item[tv.Idx[j]].Card[0]);
+< 					WFIFOW(24+j*22, tc.Cart.Item[tv.Idx[j]].Card[1]);
+< 					WFIFOW(26+j*22, tc.Cart.Item[tv.Idx[j]].Card[2]);
+< 					WFIFOW(28+j*22, tc.Cart.Item[tv.Idx[j]].Card[3]);
+< 				end;
+< 				Socket.SendBuf(buf, w);
+< 				//DebugOut.Lines.Add(Format('VenderTitle = %s : OwnerID = %d : OwnerName = %s', [tv.Title, tc.CID, tc.Name]));
+< 
+< 				//周囲に看板通知
+< 				WFIFOW(0, $0131);
+< 				WFIFOL(2, tv.ID);
+< 				WFIFOS(6, tv.Title, 80);
+< 				SendBCmd(tc.MData, tc.Point, 86, tc);
+< 			end;
+< {露店スキル追加ココまで}
+< 
+4904c4959
+<                                 tm := tc.MData;
+---
+> 																tm := tc.MData;
+4921c4976
+<                                 SendBCmd(tm, tc.Point, 13); 
+---
+> 																SendBCmd(tm, tc.Point, 13);
+4923a4979,4985
+> 		//--------------------------------------------------------------------------
+> {露店スキル追加}
+> 		$01b2: //露店開設
+> 			begin
+> 				//職業＆スキルチェック
+> 				if (tc.JID <> 5) and (tc.JID <> 10) and (tc.JID <> 18) then continue;
+> 				if (tc.Skill[41].Lv = 0) then continue;
+4925,4926c4987,5063
+<                 //--------------------------------------------------------------------------
+<                 end;
+---
+> 				//キャンセル判定
+> 				RFIFOB(84, b);//0=キャンセル,1=オープン
+> 				if (b = 0) then continue;
+> 				RFIFOW(2, w);
+> 				if (w - 85 < 8) then continue;
+> 				tv := TVender.Create;
+> 
+> 				//露店情報設定
+> 				tv.Title := RFIFOS(4, 80);//タイトル
+> 				for j := 0 to (w - 85) div 8 - 1 do begin
+> 					//IDチェック
+> 					RFIFOW(85+j*8, w1);
+> 					if (tc.Cart.Item[w1].ID = 0) then begin
+> 						exit;
+> 					end;
+> 					tv.Idx[j] := w1;
+> 					//数量チェック
+> 					RFIFOW(87+j*8, w2);
+> 					if (w2 > tc.Cart.Item[w1].Amount) then begin
+> 						w2 := tc.Cart.Item[w1].Amount;
+> 					end;
+> 					tv.Amount[j] := w2;
+> 					//価格チェック
+> 					RFIFOL(89+j*8, l);//Price
+> 					if (l > 10000000) then l := 10000000;//価格上限(10M)
+> 					tv.Price[j] := l;
+> 					//重量
+> 					td := tc.Cart.Item[w1].Data;
+> 					tv.Weight[j] := td.Weight;
+> 					tv.Cnt := tv.Cnt + 1;
+> 				end;
+> 
+> 				tv.ID := tc.ID;
+> 				tv.CID := tc.CID;
+> 				tc.VenderID := tv.ID;
+> 				tv.MaxCnt := tv.Cnt;
+> 				VenderList.AddObject(tv.ID, tv);
+> 
+> 				//カートからアイテム削除
+> 				for j := 0 to (w - 85) div 8 - 1 do begin
+> 					WFIFOW( 0, $0125);
+> 					WFIFOW( 2, tv.Idx[j]);
+> 					WFIFOL( 4, tv.Amount[j]);
+> 					Socket.SendBuf(buf, 8);
+> 				end;
+> 
+> 				//露店開始通知
+> 				w := 8 + tv.Cnt * 22;
+> 				WFIFOW( 0, $0136);
+> 				WFIFOW( 2, w);
+> 				WFIFOL( 4, tv.CID);
+> 				for j := 0 to tv.Cnt - 1 do begin
+> 					td := tc.Cart.Item[tv.Idx[j]].Data;
+> 					WFIFOL( 8+j*22, tv.Price[j]);
+> 					WFIFOW(12+j*22, tv.Idx[j]);
+> 					WFIFOW(14+j*22, tv.Amount[j]);
+> 					WFIFOB(16+j*22, td.IType);
+> 					WFIFOW(17+j*22, tc.Cart.Item[tv.Idx[j]].ID);
+> 					WFIFOB(19+j*22, tc.Cart.Item[tv.Idx[j]].Identify);
+> 					WFIFOB(20+j*22, tc.Cart.Item[tv.Idx[j]].Attr);
+> 					WFIFOB(21+j*22, tc.Cart.Item[tv.Idx[j]].Refine);
+> 					WFIFOW(22+j*22, tc.Cart.Item[tv.Idx[j]].Card[0]);
+> 					WFIFOW(24+j*22, tc.Cart.Item[tv.Idx[j]].Card[1]);
+> 					WFIFOW(26+j*22, tc.Cart.Item[tv.Idx[j]].Card[2]);
+> 					WFIFOW(28+j*22, tc.Cart.Item[tv.Idx[j]].Card[3]);
+> 				end;
+> 				Socket.SendBuf(buf, w);
+> 				//DebugOut.Lines.Add(Format('VenderTitle = %s : OwnerID = %d : OwnerName = %s', [tv.Title, tc.CID, tc.Name]));
+> 
+> 				//周囲に看板通知
+> 				WFIFOW(0, $0131);
+> 				WFIFOL(2, tv.ID);
+> 				WFIFOS(6, tv.Title, 80);
+> 				SendBCmd(tc.MData, tc.Point, 86, tc);
+> 			end;
+> {露店スキル追加ココまで}
+> 		end;
