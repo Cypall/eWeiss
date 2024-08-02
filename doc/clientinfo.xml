@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="euc-kr" ?>
+<clientinfo>
+	<desc>Ragnarok Client Information - Thai Version</desc>
+	<servicetype>thai</servicetype>
+	<servertype>sakray</servertype>
+	<connection>
+		<display>eWeiss</display>
+		<balloon>Ragnarok Offline</balloon>
+      		<address>127.0.0.1</address>
+      		<port>6900</port>
+      		<version>0</version>
+      		<langtype>5</langtype>
+		<registrationweb>www.ragnarok.com</registrationweb>
+		<aid>
+			<admin>100001</admin>
+			<admin>100002</admin>
+		</aid>
+   	</connection>
+</clientinfo>

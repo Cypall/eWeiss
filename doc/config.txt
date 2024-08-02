@@ -1,0 +1,51 @@
+IP ปรับตรงนี้ครับ เข้าไปใน weiss.ini
+
+[Server]
+IP=127.0.0.1 <---------- ปรับ IP ตรงนี้ครับ
+Name=Sakray
+NPCID=50000
+sv1port=6900
+sv2port=6121
+sv3port=5121
+WarpDebug=0
+BaseExpMultiplier=999
+JobExpMultiplier=999
+DisableMonsterActive=0
+AutoStart=0
+DisableLevelLimit=0
+EnableMonsterKnockBack=0
+DisableEquipLimit=0
+ItemDropType=0
+ItemDropDenominator=10000
+ItemDropPer=2500
+ItemDropMultiplier=1
+DisableFleeDown=0
+DisableSkillLimit=0
+DefaultZeny=1200000
+DefaultMap=prontera
+DefaultPoint_X=156
+DefaultPoint_Y=180
+DefaultItem1=1201
+DefaultItem2=2301
+DeathBaseLoss=1
+DeathJobLoss=1
+MonsterMob=0
+SummonMonsterExp=0
+SummonMonsterAgo=0
+SummonMonsterName=0
+SummonMonsterMob=0
+Timer=1
+GlobalGMsg=The [$castlename] castle has been taken by [$guildname] guild.
+MapGMsg=Emperium Has Been Destroyed
+[Option]
+Left=0
+Top=0
+Width=500
+Height=460
+Priority=3
+[Fusion]
+Option_PVP=0
+Option_MaxUsers=100
+Option_AutoSave=600
+Option_AutoBackup=0
+Option_WelcomeMsg=-1
