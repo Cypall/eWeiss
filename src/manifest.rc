@@ -1,3 +1,0 @@
-#include "Manifest.pas"
-
-CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "Weiss.exe.manifest"

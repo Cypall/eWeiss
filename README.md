@@ -1,2 +1,0 @@
-# eWeiss
- Ragnarok Server Emulator
